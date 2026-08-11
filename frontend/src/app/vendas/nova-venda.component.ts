@@ -96,7 +96,7 @@ import { Cliente } from '../core/models';
   styles: [`
     .page {
       padding: 16px;
-      padding-bottom: 96px;
+      padding-bottom: 24px;
     }
     h1 {
       font-size: 1.25rem;

@@ -29,7 +29,7 @@ import { AuthService } from './core/auth.service';
       </mat-toolbar>
     }
 
-    <main class="app-content" [class.with-nav]="auth.logado()">
+    <main class="app-content">
       <router-outlet></router-outlet>
     </main>
 
@@ -56,34 +56,30 @@ import { AuthService } from './core/auth.service';
   `,
   styles: [`
     :host {
-      display: block;
-      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
     }
     .app-toolbar {
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex: 0 0 auto;
     }
     .spacer {
       flex: 1 1 auto;
     }
     .app-content {
-      min-height: 100dvh;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       box-sizing: border-box;
     }
-    .app-content.with-nav {
-      padding-bottom: calc(64px + env(safe-area-inset-bottom));
-    }
     .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      flex: 0 0 auto;
       display: flex;
       background: white;
       border-top: 1px solid rgba(0, 0, 0, 0.12);
       padding-bottom: env(safe-area-inset-bottom);
-      z-index: 10;
     }
     .nav-item {
       flex: 1;

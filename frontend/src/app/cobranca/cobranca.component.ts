@@ -87,7 +87,7 @@ import { ParcelaDoMes } from '../core/models';
   styles: [`
     .page {
       padding: 16px;
-      padding-bottom: 96px;
+      padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
     }
