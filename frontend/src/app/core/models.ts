@@ -3,6 +3,7 @@ export interface Cliente {
   nome: string;
   telefone: string;
   observacoes: string;
+  ativo: boolean;
 }
 
 export interface Parcela {

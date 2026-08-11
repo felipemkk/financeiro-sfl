@@ -54,12 +54,12 @@ import { Parcela, Venda } from '../core/models';
             </button>
           </div>
         } @else {
-          <p class="lucro" [class.negativo]="v.lucro < 0">
-            Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}
+          <div class="lucro" [class.negativo]="v.lucro < 0">
+            <span>Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}</span>
             <button mat-icon-button class="editar-btn" (click)="iniciarEdicaoInvestido(v)" aria-label="Editar valor investido">
-              <mat-icon inline="true">edit</mat-icon>
+              <mat-icon>edit</mat-icon>
             </button>
-          </p>
+          </div>
         }
 
         @if (temPendencias()) {
@@ -144,13 +144,15 @@ import { Parcela, Venda } from '../core/models';
       margin: 0 0 8px;
     }
     .lucro {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       font-weight: 600;
       font-size: 0.9rem;
       color: #2e7d32;
       background: #e8f5e9;
       border-radius: 6px;
-      padding: 6px 12px;
+      padding: 4px 6px 4px 12px;
       margin: 0 0 20px;
     }
     .lucro.negativo {
@@ -158,16 +160,18 @@ import { Parcela, Venda } from '../core/models';
       background: #fdecea;
     }
     .editar-btn {
-      width: 24px;
-      height: 24px;
-      line-height: 24px;
-      margin-left: 2px;
-      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      color: inherit;
     }
     .editar-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
     .investido-edit {
       display: flex;

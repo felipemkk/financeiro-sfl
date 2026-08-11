@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -13,6 +14,7 @@ import { ParcelaDoMes } from '../core/models';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     MatIconModule,
     MatButtonModule,
     MatCardModule,
@@ -67,8 +69,8 @@ import { ParcelaDoMes } from '../core/models';
                 <span class="vencimento">vence {{ p.vencimento | date:'dd/MM' }}</span>
               </div>
 
-              @if (p.status !== 'paga') {
-                <div class="acoes">
+              <div class="acoes">
+                @if (p.status !== 'paga') {
                   <a mat-stroked-button [href]="linkWhatsapp(p)" target="_blank" rel="noopener">
                     <mat-icon>chat</mat-icon>
                     Cobrar no WhatsApp
@@ -76,8 +78,12 @@ import { ParcelaDoMes } from '../core/models';
                   <button mat-flat-button color="primary" (click)="marcarPaga(p)">
                     Marcar como paga
                   </button>
-                </div>
-              }
+                }
+                <a mat-stroked-button [routerLink]="['/vendas', p.venda_id]">
+                  <mat-icon>visibility</mat-icon>
+                  Ver venda
+                </a>
+              </div>
             </mat-card-content>
           </mat-card>
         }

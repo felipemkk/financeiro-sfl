@@ -19,12 +19,20 @@ export class ApiService {
     return firstValueFrom(this.http.get<Cliente>(`${this.base}/clientes/${id}`));
   }
 
-  criarCliente(cliente: Omit<Cliente, 'id'>): Promise<Cliente> {
+  criarCliente(cliente: Pick<Cliente, 'nome' | 'telefone' | 'observacoes'>): Promise<Cliente> {
     return firstValueFrom(this.http.post<Cliente>(`${this.base}/clientes`, cliente));
   }
 
-  atualizarCliente(id: number, cliente: Omit<Cliente, 'id'>): Promise<Cliente> {
+  atualizarCliente(id: number, cliente: Pick<Cliente, 'nome' | 'telefone' | 'observacoes'>): Promise<Cliente> {
     return firstValueFrom(this.http.put<Cliente>(`${this.base}/clientes/${id}`, cliente));
+  }
+
+  desativarCliente(id: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/clientes/${id}/desativar`, {}));
+  }
+
+  ativarCliente(id: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/clientes/${id}/ativar`, {}));
   }
 
   criarVenda(venda: {
