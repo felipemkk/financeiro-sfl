@@ -42,45 +42,55 @@ go test ./...
 
 ## Deploy em nuvem (sempre online, sem precisar "rodar" nada)
 
-A ideia é: banco no **Neon**, backend no **Railway**, frontend no **Vercel**.
-Depois do primeiro deploy, só se usa a URL do Vercel — no celular ou no PC.
+A stack: banco no **Neon**, backend no **Render**, frontend no **Netlify**.
+Depois do primeiro deploy, só se usa a URL do Netlify — no celular ou no PC.
+Repositório: `git@github-pessoal:felipemkk/financeiro-sfl.git`.
 
 ### 1. Banco de dados — Neon (https://neon.tech)
 
-1. Crie uma conta gratuita e um projeto Postgres.
+1. Crie uma conta gratuita e um projeto Postgres (free tier permanente, sem
+   cartão de crédito).
 2. Copie a **connection string** (algo como
-   `postgres://usuario:senha@ep-xxx.neon.tech/neondb?sslmode=require`).
+   `postgresql://usuario:senha@ep-xxx.aws.neon.tech/neondb?sslmode=require`).
 
-### 2. Backend — Railway (https://railway.app)
+### 2. Backend — Render (https://render.com)
 
-1. Crie um projeto novo a partir do repositório Git (pasta `backend/`, que já
-   tem um `Dockerfile`).
-2. Configure as variáveis de ambiente:
+1. New → Web Service, conectando o repositório GitHub.
+2. Configure:
+   - **Root Directory**: `backend`
+   - **Language/Environment**: `Docker` (detecta o `Dockerfile` sozinho)
+   - **Region**: Virginia (US East) — mais perto do Brasil entre as opções do Render
+   - **Instance Type**: `Free`
+3. Variáveis de ambiente:
    - `DATABASE_URL` = connection string do Neon
    - `JWT_SECRET` = uma string aleatória longa (ex: gerar com `openssl rand -hex 32`)
-   - `FRONTEND_ORIGIN` = a URL que o Vercel vai gerar no passo 3 (ex:
-     `https://cobranca-loja.vercel.app`) — dá pra ajustar depois de ter a URL.
-3. Depois do deploy, rode o seed do usuário uma vez (via `railway run` ou
-   conectando a connection string do Neon localmente):
+   - `FRONTEND_ORIGIN` = a URL que o Netlify vai gerar no passo 3 (dá pra
+     ajustar depois de ter a URL — o Render redeploya sozinho ao salvar)
+4. Depois do primeiro deploy, rode o seed do usuário uma vez, apontando pro
+   Neon:
    ```bash
    DATABASE_URL="<connection string do neon>" go run ./cmd/seed seu-email@exemplo.com sua-senha
    ```
-4. Anote a URL pública gerada pelo Railway (ex: `https://xxx.up.railway.app`).
+5. Anote a URL pública gerada pelo Render (ex: `https://financeiro-sfl.onrender.com`).
 
-### 3. Frontend — Vercel (https://vercel.com)
+Nota: o free tier do Render "dorme" depois de 15min sem uso — a primeira
+requisição depois disso demora uns 30-50s pra responder. É a troca aceita
+pra manter isso 100% gratuito.
 
-1. Crie um projeto novo a partir do repositório Git, com **Root Directory**
+### 3. Frontend — Netlify (https://netlify.com)
+
+1. Crie um projeto novo a partir do repositório Git, com **Base directory**
    apontando para `frontend/`.
-2. Antes de fazer o deploy, edite
-   `frontend/src/environments/environment.prod.ts` e troque `apiUrl` pela URL
-   do backend no Railway (passo anterior).
-3. O Vercel detecta o `vercel.json` e faz o build automaticamente
+2. Antes de fazer o deploy, confirme que
+   `frontend/src/environments/environment.prod.ts` tem o `apiUrl` apontando
+   pra URL do backend no Render (passo anterior).
+3. O Netlify detecta o `netlify.toml` e faz o build automaticamente
    (`npm run build`, saída em `dist/frontend/browser`).
-4. Depois do deploy, volte no Railway e confirme que `FRONTEND_ORIGIN` está
-   igual à URL final do Vercel (CORS).
+4. Depois do deploy, volte no Render e confirme que `FRONTEND_ORIGIN` está
+   igual à URL final do Netlify (CORS).
 
 Depois disso, deploys futuros são automáticos a cada `git push` — tanto
-Railway quanto Vercel voltam a buildar sozinhos.
+Render quanto Netlify voltam a buildar sozinhos.
 
 ## Próximos passos (fora do escopo desta primeira versão)
 
