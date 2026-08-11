@@ -2,31 +2,21 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from './core/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatIconModule,
-    MatToolbarModule,
-    MatButtonModule,
-  ],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, MatIconModule],
   template: `
     @if (auth.logado()) {
-      <mat-toolbar color="primary" class="app-toolbar">
-        <span>Financeiro SFL</span>
-        <span class="spacer"></span>
-        <button mat-icon-button (click)="auth.logout()" aria-label="Sair">
+      <header class="topbar">
+        <span class="brand">Financeiro <em>SFL</em></span>
+        <button class="sair" (click)="auth.logout()" aria-label="Sair">
           <mat-icon>logout</mat-icon>
+          Sair
         </button>
-      </mat-toolbar>
+      </header>
     }
 
     <main class="app-content">
@@ -60,12 +50,45 @@ import { AuthService } from './core/auth.service';
       flex-direction: column;
       height: 100dvh;
       overflow: hidden;
+      background: var(--paper);
     }
-    .app-toolbar {
+    .topbar {
       flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-raised);
     }
-    .spacer {
-      flex: 1 1 auto;
+    .brand {
+      font-family: var(--font-display);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+    .brand em {
+      font-style: normal;
+      color: var(--brass);
+    }
+    .sair {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .sair:hover { color: var(--ink); }
+    .sair mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
     .app-content {
       flex: 1 1 auto;
@@ -77,8 +100,8 @@ import { AuthService } from './core/auth.service';
     .bottom-nav {
       flex: 0 0 auto;
       display: flex;
-      background: white;
-      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      background: var(--paper-raised);
+      border-top: 1px solid var(--border);
       padding-bottom: env(safe-area-inset-bottom);
     }
     .nav-item {
@@ -87,14 +110,30 @@ import { AuthService } from './core/auth.service';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
-      padding: 8px 0;
+      gap: 3px;
+      padding: 9px 0 10px;
       text-decoration: none;
-      color: rgba(0, 0, 0, 0.6);
-      font-size: 0.7rem;
+      color: var(--ink-faint);
+      font-size: 0.6875rem;
+      font-family: var(--font-body);
+      position: relative;
+    }
+    .nav-item mat-icon {
+      font-size: 21px;
+      width: 21px;
+      height: 21px;
     }
     .nav-item.active {
-      color: var(--mat-sys-primary, #1976d2);
+      color: var(--accent-ink);
+    }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--brass);
     }
   `],
 })

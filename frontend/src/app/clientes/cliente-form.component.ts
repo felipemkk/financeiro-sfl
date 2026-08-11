@@ -4,10 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
 import { Cliente, Venda } from '../core/models';
@@ -21,10 +18,7 @@ import { Cliente, Venda } from '../core/models';
     RouterLink,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
     MatIconModule,
-    MatCardModule,
-    MatChipsModule,
     MatProgressSpinnerModule,
   ],
   template: `
@@ -32,32 +26,31 @@ import { Cliente, Venda } from '../core/models';
       @if (carregandoCliente()) {
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
       } @else if (modo() === 'visualizar') {
-        <div class="cabecalho">
-          <h1>{{ nome }}</h1>
-          @if (!clienteAtivo()) {
-            <mat-chip class="chip-inativo">Inativo</mat-chip>
-          }
-        </div>
-        <div class="info-linha">
-          <mat-icon>call</mat-icon>
-          <span>{{ telefone || 'Sem telefone cadastrado' }}</span>
+        <div class="profile-head">
+          <span class="avatar">{{ iniciais(nome) }}</span>
+          <div>
+            <div class="nome-linha">
+              <h1>{{ nome }}</h1>
+              @if (!clienteAtivo()) {
+                <span class="pill pill-inativo">Inativo</span>
+              }
+            </div>
+            <span class="telefone">{{ telefone || 'Sem telefone cadastrado' }}</span>
+          </div>
         </div>
         @if (observacoes) {
-          <div class="info-linha">
-            <mat-icon>notes</mat-icon>
-            <span>{{ observacoes }}</span>
-          </div>
+          <p class="observacoes">{{ observacoes }}</p>
         }
 
         <div class="acoes-cliente">
-          <button mat-stroked-button (click)="modo.set('editar')">
+          <button class="btn" (click)="modo.set('editar')">
             <mat-icon>edit</mat-icon>
             Editar cliente
           </button>
           @if (clienteAtivo()) {
-            <button mat-stroked-button color="warn" (click)="desativarCliente()" [disabled]="alterandoStatus()">
+            <button class="btn btn-danger" (click)="desativarCliente()" [disabled]="alterandoStatus()">
               @if (alterandoStatus()) {
-                <mat-spinner diameter="18"></mat-spinner>
+                <mat-spinner diameter="16"></mat-spinner>
               } @else {
                 <ng-container>
                   <mat-icon>block</mat-icon>
@@ -66,9 +59,9 @@ import { Cliente, Venda } from '../core/models';
               }
             </button>
           } @else {
-            <button mat-stroked-button color="primary" (click)="ativarCliente()" [disabled]="alterandoStatus()">
+            <button class="btn btn-primary" (click)="ativarCliente()" [disabled]="alterandoStatus()">
               @if (alterandoStatus()) {
-                <mat-spinner diameter="18"></mat-spinner>
+                <mat-spinner diameter="16"></mat-spinner>
               } @else {
                 <ng-container>
                   <mat-icon>check_circle</mat-icon>
@@ -79,7 +72,7 @@ import { Cliente, Venda } from '../core/models';
           }
         </div>
       } @else {
-        <h1>{{ clienteId ? 'Editar cliente' : 'Nova cliente' }}</h1>
+        <p class="section-label">{{ clienteId ? 'Editar cliente' : 'Nova cliente' }}</p>
 
         <form (ngSubmit)="salvar()">
           <mat-form-field appearance="outline" class="full-width">
@@ -99,13 +92,13 @@ import { Cliente, Venda } from '../core/models';
 
           <div class="form-acoes">
             @if (clienteId) {
-              <button mat-stroked-button type="button" (click)="cancelarEdicao()" [disabled]="salvando()">
+              <button class="btn" type="button" (click)="cancelarEdicao()" [disabled]="salvando()">
                 Cancelar
               </button>
             }
-            <button mat-flat-button color="primary" class="full-width" type="submit" [disabled]="salvando()">
+            <button class="btn btn-primary btn-block" type="submit" [disabled]="salvando()">
               @if (salvando()) {
-                <mat-spinner diameter="20"></mat-spinner>
+                <mat-spinner diameter="18"></mat-spinner>
               } @else {
                 Salvar
               }
@@ -115,53 +108,60 @@ import { Cliente, Venda } from '../core/models';
       }
 
       @if (clienteId) {
-        <h2>Histórico de vendas</h2>
+        <div class="divider-row">
+          <p class="section-label">Histórico de vendas</p>
+          <div class="rule"></div>
+        </div>
         @if (carregandoVendas()) {
           <div class="centro"><mat-spinner diameter="28"></mat-spinner></div>
         } @else if (vendas().length === 0) {
           <p class="vazio">Nenhuma venda registrada ainda.</p>
         } @else {
-          <div class="resumo">
-            <p class="total">Total vendido: {{ totalVendido() | currency:'BRL' }}</p>
-            <p class="total">Total pago: {{ totalPago() | currency:'BRL' }}</p>
-            <p class="total" [class.negativo]="lucroTotal() < 0">Lucro total: {{ lucroTotal() | currency:'BRL' }}</p>
+          <div class="ledger-summary">
+            <div>
+              <p class="l-label">Vendido</p>
+              <p class="l-value amt">{{ totalVendido() | currency:'BRL' }}</p>
+            </div>
+            <div>
+              <p class="l-label">Pago</p>
+              <p class="l-value amt">{{ totalPago() | currency:'BRL' }}</p>
+            </div>
+            <div class="profit">
+              <p class="l-label">Lucro</p>
+              <p class="l-value amt">{{ lucroTotal() | currency:'BRL' }}</p>
+            </div>
           </div>
           @for (v of vendas(); track v.id) {
-            <mat-card class="venda-card" [class.quitada]="!temPendencia(v)">
-              <mat-card-header>
-                <mat-card-title>Venda #{{ v.id }} — {{ v.descricao_produto }}</mat-card-title>
-                <mat-card-subtitle>
-                  {{ v.valor_total | currency:'BRL' }} em {{ v.num_parcelas }}x — início {{ v.data_primeira_parcela | date:'dd/MM/yyyy' }}
-                </mat-card-subtitle>
-              </mat-card-header>
-              <mat-card-content>
-                <p class="lucro" [class.negativo]="v.lucro < 0">
-                  Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}
-                </p>
-                <div class="parcelas-chips">
-                  @for (p of v.parcelas; track p.id) {
-                    <mat-chip [class.chip-paga]="p.status === 'paga'" [class.chip-atrasada]="p.status !== 'paga' && isAtrasada(p.vencimento)">
-                      <span class="chip-conteudo">
-                        <span>{{ p.numero }}: {{ p.valor | currency:'BRL' }} — {{ p.vencimento | date:'dd/MM' }}</span>
-                        @if (p.status === 'paga') { <mat-icon inline="true" class="chip-check">check</mat-icon> }
-                      </span>
-                    </mat-chip>
-                  }
-                </div>
-                <div class="venda-acoes">
-                  <a mat-stroked-button [routerLink]="['/vendas', v.id]">Ver venda</a>
-                  @if (temPendencia(v)) {
-                    <button mat-stroked-button color="primary" (click)="quitarVenda(v)" [disabled]="quitandoId() === v.id">
-                      @if (quitandoId() === v.id) {
-                        <mat-spinner diameter="18"></mat-spinner>
-                      } @else {
-                        Quitar venda
-                      }
-                    </button>
-                  }
-                </div>
-              </mat-card-content>
-            </mat-card>
+            <div class="card sale-card" [class.quitada]="!temPendencia(v)">
+              <div class="sale-top">
+                <span class="sale-title">{{ v.descricao_produto }}</span>
+                <span class="sale-num amt">Nº {{ v.id }}</span>
+              </div>
+              <p class="sale-meta">{{ v.valor_total | currency:'BRL' }} em {{ v.num_parcelas }}x — início {{ v.data_primeira_parcela | date:'dd/MM/yyyy' }}</p>
+              <p class="lucro" [class.negativo]="v.lucro < 0">
+                Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}
+              </p>
+              <div class="installments">
+                @for (p of v.parcelas; track p.id) {
+                  <span class="inst" [class.done]="p.status === 'paga'">
+                    {{ p.numero }} · {{ p.valor | currency:'BRL' }}
+                    @if (p.status === 'paga') { <mat-icon inline="true" class="inst-check">check</mat-icon> }
+                  </span>
+                }
+              </div>
+              <div class="card-actions">
+                <a class="btn" [routerLink]="['/vendas', v.id]">Ver venda</a>
+                @if (temPendencia(v)) {
+                  <button class="btn btn-primary" (click)="quitarVenda(v)" [disabled]="quitandoId() === v.id">
+                    @if (quitandoId() === v.id) {
+                      <mat-spinner diameter="16"></mat-spinner>
+                    } @else {
+                      Quitar venda
+                    }
+                  </button>
+                }
+              </div>
+            </div>
           }
         }
       }
@@ -169,48 +169,56 @@ import { Cliente, Venda } from '../core/models';
   `,
   styles: [`
     .page {
-      padding: 16px;
+      padding: 20px;
       padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
     }
-    h1 {
-      font-size: 1.25rem;
-      margin: 0 0 12px;
-    }
-    h2 {
-      font-size: 1rem;
-      margin: 24px 0 12px;
-    }
-    .cabecalho {
+    .profile-head {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+      gap: 14px;
+      margin-bottom: 10px;
     }
-    .cabecalho h1 {
-      margin: 0;
-    }
-    .chip-inativo {
-      background: #f0f0f0 !important;
-      color: rgba(0, 0, 0, 0.6);
-    }
-    .info-linha {
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent-weak);
+      color: var(--accent-ink);
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: rgba(0, 0, 0, 0.7);
-      margin-bottom: 8px;
-    }
-    .info-linha mat-icon {
-      color: rgba(0, 0, 0, 0.4);
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.125rem;
       flex: 0 0 auto;
+    }
+    .nome-linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.1875rem;
+      margin: 0;
+      color: var(--ink);
+    }
+    .telefone {
+      font-size: 0.8125rem;
+      color: var(--ink-muted);
+    }
+    .observacoes {
+      font-size: 0.875rem;
+      color: var(--ink-muted);
+      margin: 4px 0 0;
     }
     .acoes-cliente {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 16px 0 8px;
+      margin: 20px 0 8px;
     }
     .full-width {
       width: 100%;
@@ -221,8 +229,8 @@ import { Cliente, Venda } from '../core/models';
       gap: 8px;
       align-items: center;
     }
-    .form-acoes .full-width {
-      margin-bottom: 0;
+    .form-acoes .btn-block {
+      flex: 1;
     }
     .centro {
       display: flex;
@@ -230,63 +238,61 @@ import { Cliente, Venda } from '../core/models';
       padding: 24px 0;
     }
     .vazio {
-      color: rgba(0, 0, 0, 0.6);
+      color: var(--ink-muted);
     }
-    .resumo {
-      margin: 0 0 12px;
-    }
-    .total {
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin: 0 0 2px;
-    }
-    .total.negativo {
-      color: #b3261e;
-    }
-    .venda-card {
-      margin-bottom: 12px;
-      border-left: 4px solid transparent;
-    }
-    .venda-card.quitada {
-      background: #eef8ef;
-      border-left-color: #4caf50;
-    }
-    .lucro {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #2e7d32;
-      margin: 0 0 4px;
-    }
-    .lucro.negativo {
-      color: #b3261e;
-    }
-    .parcelas-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .chip-conteudo {
+    .divider-row {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 10px;
+      margin: 28px 0 14px;
     }
-    .chip-check {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      flex: 0 0 auto;
+    .divider-row .section-label { margin: 0; white-space: nowrap; }
+    .divider-row .rule { flex: 1; height: 1px; background: var(--border); }
+    .ledger-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
     }
-    .venda-acoes {
+    .ledger-summary > div { padding: 12px 8px; text-align: center; }
+    .ledger-summary > div + div { border-left: 1px solid var(--border); }
+    .l-label { font-size: 0.625rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 5px; }
+    .l-value { font-size: 0.9375rem; margin: 0; color: var(--ink); }
+    .ledger-summary .profit .l-value { color: var(--brass); }
+    .sale-card { margin-bottom: 12px; }
+    .sale-card.quitada { background: var(--accent-weak); border-color: transparent; }
+    .sale-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .sale-title { font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+    .sale-num { color: var(--brass); font-size: 0.875rem; }
+    .sale-meta { font-size: 0.8125rem; color: var(--ink-muted); margin: 0 0 8px; }
+    .lucro {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent-ink);
+      margin: 0 0 10px;
+    }
+    .lucro.negativo {
+      color: var(--critical-ink);
+    }
+    .installments { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .inst {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.6875rem;
+      font-variant-numeric: tabular-nums;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--ink-muted);
+    }
+    .inst.done { background: var(--accent-weak); color: var(--accent-ink); border-color: transparent; }
+    .inst-check { font-size: 13px; width: 13px; height: 13px; }
+    .card-actions {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
-    }
-    .chip-paga {
-      background: #d5f2dd !important;
-    }
-    .chip-atrasada {
-      background: #fbdada !important;
     }
   `],
 })
@@ -343,8 +349,10 @@ export class ClienteFormComponent implements OnInit {
     }
   }
 
-  isAtrasada(vencimento: string): boolean {
-    return new Date(vencimento) < new Date(new Date().toDateString());
+  iniciais(nome: string): string {
+    const partes = nome.trim().split(/\s+/);
+    const primeiras = partes.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '');
+    return primeiras.join('') || '?';
   }
 
   totalVendido(): number {

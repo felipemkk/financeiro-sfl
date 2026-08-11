@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../core/auth.service';
 
@@ -17,41 +15,36 @@ import { AuthService } from '../core/auth.service';
     FormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
-    MatCardModule,
     MatProgressSpinnerModule,
   ],
   template: `
     <div class="login-page">
-      <mat-card class="login-card">
-        <mat-card-header>
-          <mat-card-title>Financeiro SFL</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <form (ngSubmit)="entrar()">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>E-mail</mat-label>
-              <input matInput type="email" name="email" [(ngModel)]="email" required autocomplete="username" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Senha</mat-label>
-              <input matInput type="password" name="senha" [(ngModel)]="senha" required autocomplete="current-password" />
-            </mat-form-field>
+      <div class="login-card">
+        <p class="eyebrow">Bem-vinda de volta</p>
+        <h1>Financeiro <em>SFL</em></h1>
+        <form (ngSubmit)="entrar()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>E-mail</mat-label>
+            <input matInput type="email" name="email" [(ngModel)]="email" required autocomplete="username" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Senha</mat-label>
+            <input matInput type="password" name="senha" [(ngModel)]="senha" required autocomplete="current-password" />
+          </mat-form-field>
 
-            @if (erro()) {
-              <p class="erro">{{ erro() }}</p>
+          @if (erro()) {
+            <p class="erro">{{ erro() }}</p>
+          }
+
+          <button class="btn btn-primary btn-block" type="submit" [disabled]="carregando()">
+            @if (carregando()) {
+              <mat-spinner diameter="18"></mat-spinner>
+            } @else {
+              Entrar
             }
-
-            <button mat-flat-button color="primary" class="full-width" type="submit" [disabled]="carregando()">
-              @if (carregando()) {
-                <mat-spinner diameter="20"></mat-spinner>
-              } @else {
-                Entrar
-              }
-            </button>
-          </form>
-        </mat-card-content>
-      </mat-card>
+          </button>
+        </form>
+      </div>
     </div>
   `,
   styles: [`
@@ -62,19 +55,47 @@ import { AuthService } from '../core/auth.service';
       min-height: 100dvh;
       padding: 16px;
       box-sizing: border-box;
+      background: var(--paper);
     }
     .login-card {
       width: 100%;
       max-width: 360px;
+      background: var(--paper-raised);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--brass);
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.5rem;
+      margin: 0 0 24px;
+      color: var(--ink);
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--brass);
     }
     .full-width {
       width: 100%;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     .erro {
-      color: #b3261e;
+      color: var(--critical-ink);
       font-size: 0.875rem;
-      margin: 0 0 12px;
+      margin: 4px 0 12px;
+    }
+    .btn-block {
+      margin-top: 12px;
     }
   `],
 })

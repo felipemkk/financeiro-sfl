@@ -5,11 +5,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
 import { ApiService } from '../core/api.service';
 import { Cliente } from '../core/models';
 
@@ -22,15 +20,13 @@ import { Cliente } from '../core/models';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatProgressSpinnerModule,
-    MatCardModule,
   ],
   template: `
     <div class="page">
-      <h1>Nova venda parcelada</h1>
+      <p class="section-label">Nova venda parcelada</p>
 
       <form (ngSubmit)="salvar()">
         <mat-form-field appearance="outline" class="full-width">
@@ -74,8 +70,8 @@ import { Cliente } from '../core/models';
         }
 
         @if (valorTotal) {
-          <p class="lucro" [class.negativo]="lucro() < 0">
-            Lucro: {{ lucro() | currency:'BRL' }}
+          <p class="lucro-tag" [class.negativo]="lucro() < 0">
+            Lucro: <span class="amt">{{ lucro() | currency:'BRL' }}</span>
           </p>
         }
 
@@ -83,9 +79,9 @@ import { Cliente } from '../core/models';
           <p class="erro">{{ erro() }}</p>
         }
 
-        <button mat-flat-button color="primary" class="full-width" type="submit" [disabled]="salvando()">
+        <button class="btn btn-primary btn-block" type="submit" [disabled]="salvando()">
           @if (salvando()) {
-            <mat-spinner diameter="20"></mat-spinner>
+            <mat-spinner diameter="18"></mat-spinner>
           } @else {
             Registrar venda
           }
@@ -95,33 +91,40 @@ import { Cliente } from '../core/models';
   `,
   styles: [`
     .page {
-      padding: 16px;
+      padding: 20px;
       padding-bottom: 24px;
-    }
-    h1 {
-      font-size: 1.25rem;
-      margin: 0 0 12px;
+      max-width: 640px;
+      margin: 0 auto;
     }
     .full-width {
       width: 100%;
       margin-bottom: 8px;
     }
     .preview {
-      color: rgba(0, 0, 0, 0.6);
+      color: var(--ink-muted);
+      font-size: 0.875rem;
       margin: 0 0 12px;
     }
-    .lucro {
+    .lucro-tag {
+      display: inline-block;
       font-weight: 600;
-      color: #2e7d32;
-      margin: 0 0 12px;
+      font-size: 0.875rem;
+      color: var(--accent-ink);
+      background: var(--accent-weak);
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin: 0 0 16px;
     }
-    .lucro.negativo {
-      color: #b3261e;
+    .lucro-tag.negativo {
+      color: var(--critical-ink);
+      background: var(--critical-weak);
     }
     .erro {
-      color: #b3261e;
+      color: var(--critical-ink);
+      font-size: 0.875rem;
       margin: 0 0 12px;
     }
+    .btn-block { margin-top: 8px; }
   `],
 })
 export class NovaVendaComponent implements OnInit {

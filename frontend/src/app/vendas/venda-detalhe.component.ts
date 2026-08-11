@@ -2,10 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -18,10 +15,7 @@ import { Parcela, Venda } from '../core/models';
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
-    MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
@@ -32,7 +26,8 @@ import { Parcela, Venda } from '../core/models';
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
       } @else if (venda()) {
         @let v = venda()!;
-        <h1>Venda #{{ v.id }} — {{ v.descricao_produto }}</h1>
+        <p class="sale-num amt">Venda Nº {{ v.id }}</p>
+        <h1>{{ v.descricao_produto }}</h1>
         <p class="subtitulo">
           {{ v.valor_total | currency:'BRL' }} em {{ v.num_parcelas }}x — início {{ v.data_primeira_parcela | date:'dd/MM/yyyy' }}
         </p>
@@ -42,136 +37,134 @@ import { Parcela, Venda } from '../core/models';
               <mat-label>Valor investido (R$)</mat-label>
               <input matInput type="number" min="0" step="0.01" [(ngModel)]="investidoEditavel" />
             </mat-form-field>
-            <button mat-icon-button color="primary" (click)="salvarInvestido()" [disabled]="salvandoInvestido() || investidoEditavel === null" aria-label="Salvar">
+            <button class="btn btn-icon" (click)="salvarInvestido()" [disabled]="salvandoInvestido() || investidoEditavel === null" aria-label="Salvar">
               @if (salvandoInvestido()) {
-                <mat-spinner diameter="20"></mat-spinner>
+                <mat-spinner diameter="18"></mat-spinner>
               } @else {
                 <mat-icon>check</mat-icon>
               }
             </button>
-            <button mat-icon-button (click)="editandoInvestido.set(false)" aria-label="Cancelar">
+            <button class="btn btn-icon" (click)="editandoInvestido.set(false)" aria-label="Cancelar">
               <mat-icon>close</mat-icon>
             </button>
           </div>
         } @else {
           <div class="lucro" [class.negativo]="v.lucro < 0">
             <span>Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}</span>
-            <button mat-icon-button class="editar-btn" (click)="iniciarEdicaoInvestido(v)" aria-label="Editar valor investido">
+            <button class="btn btn-icon editar-btn" (click)="iniciarEdicaoInvestido(v)" aria-label="Editar valor investido">
               <mat-icon>edit</mat-icon>
             </button>
           </div>
         }
 
         @if (temPendencias()) {
-          <button mat-flat-button color="primary" class="full-width" (click)="quitarVenda()" [disabled]="quitando()">
+          <button class="btn btn-primary btn-block" (click)="quitarVenda()" [disabled]="quitando()">
             @if (quitando()) {
-              <mat-spinner diameter="20"></mat-spinner>
+              <mat-spinner diameter="18"></mat-spinner>
             } @else {
               Quitar venda inteira
             }
           </button>
         }
 
-        <h2>Parcelas</h2>
+        <div class="divider-row">
+          <p class="section-label">Parcelas</p>
+          <div class="rule"></div>
+        </div>
         @for (p of v.parcelas; track p.id) {
-          <mat-card class="parcela-card" [class.paga]="p.status === 'paga'" [class.atrasada]="p.status !== 'paga' && isAtrasada(p.vencimento)">
-            <mat-card-content>
-              <div class="linha-topo">
-                <span class="numero">
-                  @if (p.status === 'paga') { <mat-icon class="icone-paga">check_circle</mat-icon> }
-                  Parcela {{ p.numero }}/{{ v.num_parcelas }}
-                </span>
-                <mat-chip [class.chip-paga]="p.status === 'paga'" [class.chip-atrasada]="p.status !== 'paga' && isAtrasada(p.vencimento)">
-                  {{ statusLabel(p) }}
-                </mat-chip>
-              </div>
-              <p class="detalhe">
-                Vence {{ p.vencimento | date:'dd/MM/yyyy' }} — {{ p.valor | currency:'BRL' }}
-                @if (p.valor_pago > 0 && p.status !== 'paga') {
-                  <br /><span class="parcial">Já pago: {{ p.valor_pago | currency:'BRL' }} — Restante: {{ (p.valor - p.valor_pago) | currency:'BRL' }}</span>
-                }
-              </p>
+          <div class="card parcela-card" [class.paga]="p.status === 'paga'">
+            <div class="linha-topo">
+              <span class="numero">
+                @if (p.status === 'paga') { <mat-icon class="icone-paga">check_circle</mat-icon> }
+                Parcela {{ p.numero }}/{{ v.num_parcelas }}
+              </span>
+              <span class="pill" [class.pill-paga]="p.status === 'paga'" [class.pill-pendente]="p.status !== 'paga' && !isAtrasada(p.vencimento)" [class.pill-atrasada]="p.status !== 'paga' && isAtrasada(p.vencimento)">
+                {{ statusLabel(p) }}
+              </span>
+            </div>
+            <p class="detalhe">
+              Vence {{ p.vencimento | date:'dd/MM/yyyy' }} — {{ p.valor | currency:'BRL' }}
+              @if (p.valor_pago > 0 && p.status !== 'paga') {
+                <br /><span class="parcial">Já pago: {{ p.valor_pago | currency:'BRL' }} — Restante: {{ (p.valor - p.valor_pago) | currency:'BRL' }}</span>
+              }
+            </p>
 
-              <div class="acoes">
-                @if (p.status === 'paga') {
-                  <button mat-stroked-button (click)="desfazerPagamento(p)" [disabled]="processando() === p.id">
-                    <mat-icon>undo</mat-icon>
-                    Desfazer pagamento
+            <div class="acoes">
+              @if (p.status === 'paga') {
+                <button class="btn" (click)="desfazerPagamento(p)" [disabled]="processando() === p.id">
+                  <mat-icon>undo</mat-icon>
+                  Desfazer pagamento
+                </button>
+              } @else {
+                <button class="btn btn-primary" (click)="marcarPaga(p)" [disabled]="processando() === p.id">
+                  <mat-icon>check</mat-icon>
+                  Marcar como paga
+                </button>
+                <div class="abater-form">
+                  <mat-form-field appearance="outline" class="abater-input" subscriptSizing="dynamic">
+                    <mat-label>Abater valor (R$)</mat-label>
+                    <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="abaterValores[p.id]" />
+                  </mat-form-field>
+                  <button class="btn" (click)="abater(p)" [disabled]="processando() === p.id || !abaterValores[p.id]">
+                    Abater
                   </button>
-                } @else {
-                  <button mat-flat-button color="primary" (click)="marcarPaga(p)" [disabled]="processando() === p.id">
-                    <mat-icon>check</mat-icon>
-                    Marcar como paga
-                  </button>
-                  <div class="abater-form">
-                    <mat-form-field appearance="outline" class="abater-input" subscriptSizing="dynamic">
-                      <mat-label>Abater valor (R$)</mat-label>
-                      <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="abaterValores[p.id]" />
-                    </mat-form-field>
-                    <button mat-stroked-button (click)="abater(p)" [disabled]="processando() === p.id || !abaterValores[p.id]">
-                      Abater
-                    </button>
-                  </div>
-                }
-              </div>
-            </mat-card-content>
-          </mat-card>
+                </div>
+              }
+            </div>
+          </div>
         }
       }
     </div>
   `,
   styles: [`
     .page {
-      padding: 16px;
+      padding: 20px;
       padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
     }
-    h1 {
-      font-size: 1.2rem;
-      margin: 0 0 4px;
+    .sale-num {
+      font-size: 0.8125rem;
+      color: var(--brass);
+      margin: 0 0 2px;
     }
-    h2 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: rgba(0, 0, 0, 0.5);
-      margin: 24px 0 12px;
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.25rem;
+      margin: 0 0 4px;
+      color: var(--ink);
     }
     .subtitulo {
-      color: rgba(0, 0, 0, 0.6);
-      margin: 0 0 8px;
+      color: var(--ink-muted);
+      font-size: 0.875rem;
+      margin: 0 0 12px;
     }
     .lucro {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       font-weight: 600;
-      font-size: 0.9rem;
-      color: #2e7d32;
-      background: #e8f5e9;
+      font-size: 0.875rem;
+      color: var(--accent-ink);
+      background: var(--accent-weak);
       border-radius: 6px;
       padding: 4px 6px 4px 12px;
       margin: 0 0 20px;
     }
     .lucro.negativo {
-      color: #b3261e;
-      background: #fdecea;
+      color: var(--critical-ink);
+      background: var(--critical-weak);
     }
     .editar-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
       width: 28px;
       height: 28px;
-      flex: 0 0 auto;
-      color: inherit;
+      padding: 0;
     }
     .editar-btn mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 17px;
+      width: 17px;
+      height: 17px;
     }
     .investido-edit {
       display: flex;
@@ -183,27 +176,26 @@ import { Parcela, Venda } from '../core/models';
       flex: 1;
       max-width: 200px;
     }
-    .full-width {
-      width: 100%;
-      margin-bottom: 8px;
-    }
+    .btn-block { width: 100%; margin-bottom: 8px; }
     .centro {
       display: flex;
       justify-content: center;
       padding: 32px 0;
     }
+    .divider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 24px 0 14px;
+    }
+    .divider-row .section-label { margin: 0; white-space: nowrap; }
+    .divider-row .rule { flex: 1; height: 1px; background: var(--border); }
     .parcela-card {
       margin-bottom: 12px;
-      border-left: 4px solid transparent;
-      transition: background-color 0.15s ease;
     }
     .parcela-card.paga {
-      background: #eef8ef;
-      border-left-color: #4caf50;
-    }
-    .parcela-card.atrasada {
-      background: #fdf1f0;
-      border-left-color: #e57373;
+      background: var(--accent-weak);
+      border-color: transparent;
     }
     .linha-topo {
       display: flex;
@@ -216,29 +208,33 @@ import { Parcela, Venda } from '../core/models';
       align-items: center;
       gap: 6px;
       font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--ink);
     }
     .icone-paga {
-      color: #4caf50;
+      color: var(--accent-ink);
       font-size: 20px;
       width: 20px;
       height: 20px;
     }
     .detalhe {
-      color: rgba(0, 0, 0, 0.6);
+      color: var(--ink-muted);
       font-size: 0.875rem;
       margin: 0 0 12px;
       line-height: 1.5;
     }
     .parcial {
-      color: #b26a00;
+      color: var(--brass);
     }
     .acoes {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .acoes button mat-icon {
-      margin-right: 4px;
+    .acoes .btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
     .abater-form {
       display: flex;
@@ -247,12 +243,6 @@ import { Parcela, Venda } from '../core/models';
     }
     .abater-input {
       flex: 1;
-    }
-    .chip-paga {
-      background: #d5f2dd !important;
-    }
-    .chip-atrasada {
-      background: #fbdada !important;
     }
   `],
 })

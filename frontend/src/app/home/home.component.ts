@@ -1,7 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
 import { DashboardResumo } from '../core/models';
@@ -9,41 +8,38 @@ import { DashboardResumo } from '../core/models';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatProgressSpinnerModule],
   template: `
     <div class="page">
-      <h1>Resumo</h1>
+      <p class="section-label">Resumo do mês</p>
 
       @if (carregando()) {
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
       } @else if (resumo()) {
         @let r = resumo()!;
         <div class="grid">
-          <a class="card atraso" routerLink="/cobranca">
-            <mat-icon class="icone">error</mat-icon>
-            <span class="numero">{{ r.atrasados_qtd }}</span>
-            <span class="rotulo">Pagamentos em atraso</span>
-            <span class="valor">{{ r.atrasados_total | currency:'BRL' }}</span>
+          <a class="stat critical" routerLink="/cobranca">
+            <p class="stat-label">Em atraso</p>
+            <p class="stat-value">{{ r.atrasados_qtd }}</p>
+            <p class="stat-sub">{{ r.atrasados_total | currency:'BRL' }}</p>
           </a>
 
-          <a class="card hoje" routerLink="/cobranca">
-            <mat-icon class="icone">today</mat-icon>
-            <span class="numero">{{ r.hoje_qtd }}</span>
-            <span class="rotulo">A receber hoje</span>
-            <span class="valor">{{ r.hoje_total | currency:'BRL' }}</span>
+          <a class="stat" routerLink="/cobranca">
+            <p class="stat-label">A receber hoje</p>
+            <p class="stat-value">{{ r.hoje_qtd }}</p>
+            <p class="stat-sub">{{ r.hoje_total | currency:'BRL' }}</p>
           </a>
 
-          <a class="card clientes" routerLink="/clientes">
-            <mat-icon class="icone">people</mat-icon>
-            <span class="numero">{{ r.clientes_total }}</span>
-            <span class="rotulo">Clientes cadastrados</span>
+          <a class="stat" routerLink="/clientes">
+            <p class="stat-label">Clientes ativas</p>
+            <p class="stat-value">{{ r.clientes_total }}</p>
+            <p class="stat-sub">cadastradas</p>
           </a>
 
-          <div class="card vendas">
-            <mat-icon class="icone">trending_up</mat-icon>
-            <span class="numero">{{ r.vendas_mes_total | currency:'BRL' }}</span>
-            <span class="rotulo">Total de vendas no mês</span>
-            <span class="valor">{{ r.vendas_mes_qtd }} venda(s)</span>
+          <div class="stat accent">
+            <p class="stat-label">Vendido no mês</p>
+            <p class="stat-value">{{ r.vendas_mes_total | currency:'BRL' }}</p>
+            <p class="stat-sub">{{ r.vendas_mes_qtd }} venda(s)</p>
           </div>
         </div>
       }
@@ -51,14 +47,10 @@ import { DashboardResumo } from '../core/models';
   `,
   styles: [`
     .page {
-      padding: 16px;
+      padding: 20px;
       padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
-    }
-    h1 {
-      font-size: 1.25rem;
-      margin: 0 0 16px;
     }
     .centro {
       display: flex;
@@ -68,64 +60,40 @@ import { DashboardResumo } from '../core/models';
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
-    .card {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 16px;
-      border-radius: 10px;
+    .stat {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 14px;
+      background: var(--paper-raised);
       text-decoration: none;
       color: inherit;
-      border-left: 4px solid transparent;
     }
-    .icone {
-      margin-bottom: 6px;
-      opacity: 0.8;
+    .stat-label {
+      font-size: 0.6875rem;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 8px;
     }
-    .numero {
-      font-size: 1.4rem;
-      font-weight: 700;
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-variant-numeric: tabular-nums;
+      margin: 0 0 2px;
       line-height: 1.1;
+      color: var(--ink);
     }
-    .rotulo {
-      font-size: 0.8rem;
-      color: rgba(0, 0, 0, 0.6);
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+      margin: 0;
     }
-    .valor {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-top: 4px;
-    }
-    .atraso {
-      background: #fdf1f0;
-      border-left-color: #e57373;
-    }
-    .atraso .icone {
-      color: #d32f2f;
-    }
-    .hoje {
-      background: #e8f0fe;
-      border-left-color: #4285f4;
-    }
-    .hoje .icone {
-      color: #1a56db;
-    }
-    .clientes {
-      background: #f5f5f5;
-      border-left-color: #9e9e9e;
-    }
-    .clientes .icone {
-      color: #616161;
-    }
-    .vendas {
-      background: #eef8ef;
-      border-left-color: #4caf50;
-    }
-    .vendas .icone {
-      color: #2e7d32;
-    }
+    .stat.critical .stat-value { color: var(--critical-ink); }
+    .stat.accent .stat-value { color: var(--accent-ink); }
   `],
 })
 export class HomeComponent implements OnInit {
