@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  CapaCategoria,
   Cliente,
   DashboardResumo,
   ImagemCarrossel,
@@ -182,10 +181,15 @@ export class ApiService {
     return firstValueFrom(this.http.get<ResumoCasa>(`${this.base}/casa/resumo?ano=${ano}&mes=${mes}`));
   }
 
-  listarProdutosVitrine(opcoes?: { categoria?: string; destaque?: boolean }): Promise<ProdutoVitrine[]> {
+  listarProdutosVitrine(opcoes?: {
+    categoria?: string;
+    destaque?: boolean;
+    capaCategoria?: boolean;
+  }): Promise<ProdutoVitrine[]> {
     const params: string[] = [];
     if (opcoes?.categoria) params.push(`categoria=${encodeURIComponent(opcoes.categoria)}`);
     if (opcoes?.destaque) params.push('destaque=true');
+    if (opcoes?.capaCategoria) params.push('capa_categoria=true');
     const query = params.length ? `?${params.join('&')}` : '';
     return firstValueFrom(this.http.get<ProdutoVitrine[]>(`${this.base}/vitrine/produtos${query}`));
   }
@@ -208,6 +212,12 @@ export class ApiService {
 
   desativarProdutoVitrine(id: number): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/vitrine/admin/produtos/${id}/desativar`, {}));
+  }
+
+  definirCapaCategoria(id: number): Promise<ProdutoVitrine> {
+    return firstValueFrom(
+      this.http.post<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos/${id}/capa-categoria`, {})
+    );
   }
 
   excluirProdutoVitrine(id: number): Promise<void> {
@@ -234,24 +244,5 @@ export class ApiService {
 
   excluirImagemCarrossel(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/carrossel/${id}`));
-  }
-
-  listarCapasCategorias(): Promise<CapaCategoria[]> {
-    return firstValueFrom(this.http.get<CapaCategoria[]>(`${this.base}/vitrine/categorias/capas`));
-  }
-
-  definirCapaCategoria(categoria: string, imagemUrl: string): Promise<CapaCategoria> {
-    return firstValueFrom(
-      this.http.put<CapaCategoria>(
-        `${this.base}/vitrine/admin/categorias/${encodeURIComponent(categoria)}/capa`,
-        { imagem_url: imagemUrl }
-      )
-    );
-  }
-
-  excluirCapaCategoria(categoria: string): Promise<void> {
-    return firstValueFrom(
-      this.http.delete<void>(`${this.base}/vitrine/admin/categorias/${encodeURIComponent(categoria)}/capa`)
-    );
   }
 }

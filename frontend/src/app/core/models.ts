@@ -103,11 +103,6 @@ export interface ImagemCarrossel {
   imagem_url: string;
 }
 
-export interface CapaCategoria {
-  categoria: string;
-  imagem_url: string;
-}
-
 export interface ProdutoVitrine {
   id: number;
   categoria: string;
@@ -120,5 +115,6 @@ export interface ProdutoVitrine {
   foto_extra_3: string;
   foto_extra_4: string;
   destaque: boolean;
+  capa_categoria: boolean;
   ativo: boolean;
 }

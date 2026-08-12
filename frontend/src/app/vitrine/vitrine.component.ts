@@ -324,10 +324,10 @@ export class VitrineComponent implements OnInit {
     try {
       const [produtos, capas] = await Promise.all([
         this.api.listarProdutosVitrine({ destaque: true }),
-        this.api.listarCapasCategorias(),
+        this.api.listarProdutosVitrine({ capaCategoria: true }),
       ]);
       this.produtos.set(produtos);
-      this.capas.set(Object.fromEntries(capas.map((c) => [c.categoria, c.imagem_url])));
+      this.capas.set(Object.fromEntries(capas.map((p) => [p.categoria, p.imagem_url])));
     } finally {
       this.carregando.set(false);
     }

@@ -104,14 +104,6 @@ export const routes: Routes = [
       import('./vitrine/vitrine-carrossel-admin.component').then((m) => m.VitrineCarrosselAdminComponent),
   },
   {
-    path: 'vitrine/gerenciar/capa/:categoria',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./vitrine/vitrine-categoria-capa-admin.component').then(
-        (m) => m.VitrineCategoriaCapaAdminComponent
-      ),
-  },
-  {
     path: 'vitrine/gerenciar/catalogo/:categoria',
     canActivate: [authGuard],
     loadComponent: () =>
