@@ -1,7 +1,10 @@
 export interface Cliente {
   id: number;
   nome: string;
+  cpf: string;
   telefone: string;
+  whatsapp: string;
+  endereco: string;
   observacoes: string;
   ativo: boolean;
 }
@@ -36,6 +39,7 @@ export interface ParcelaDoMes {
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
+  cliente_whatsapp: string;
   tipo: TipoVenda;
   descricao_produto: string;
   numero: number;

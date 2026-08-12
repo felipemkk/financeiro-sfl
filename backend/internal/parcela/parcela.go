@@ -31,6 +31,7 @@ type parcelaDoMes struct {
 	ClienteID        int     `json:"cliente_id"`
 	ClienteNome      string  `json:"cliente_nome"`
 	ClienteTelefone  string  `json:"cliente_telefone"`
+	ClienteWhatsApp  string  `json:"cliente_whatsapp"`
 	Tipo             string  `json:"tipo"`
 	DescricaoProduto string  `json:"descricao_produto"`
 	Numero           int     `json:"numero"`
@@ -62,7 +63,7 @@ func (h *Handler) listByMonth(w http.ResponseWriter, r *http.Request) {
 	fim := inicio.AddDate(0, 1, 0)
 
 	rows, err := h.pool.Query(r.Context(), `
-		SELECT p.id, p.venda_id, c.id, c.nome, COALESCE(c.telefone,''),
+		SELECT p.id, p.venda_id, c.id, c.nome, COALESCE(c.telefone,''), COALESCE(c.whatsapp,''),
 		       v.tipo, v.descricao_produto, p.numero, v.num_parcelas, p.valor, p.vencimento, p.status
 		FROM parcelas p
 		JOIN vendas v ON v.id = p.venda_id
@@ -80,7 +81,7 @@ func (h *Handler) listByMonth(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p parcelaDoMes
 		var venc time.Time
-		if err := rows.Scan(&p.ID, &p.VendaID, &p.ClienteID, &p.ClienteNome, &p.ClienteTelefone,
+		if err := rows.Scan(&p.ID, &p.VendaID, &p.ClienteID, &p.ClienteNome, &p.ClienteTelefone, &p.ClienteWhatsApp,
 			&p.Tipo, &p.DescricaoProduto, &p.Numero, &p.NumParcelas, &p.Valor, &venc, &p.Status); err != nil {
 			http.Error(w, "erro ao ler parcelas", http.StatusInternalServerError)
 			return

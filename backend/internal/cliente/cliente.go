@@ -13,7 +13,10 @@ import (
 type Cliente struct {
 	ID          int    `json:"id"`
 	Nome        string `json:"nome"`
+	CPF         string `json:"cpf"`
 	Telefone    string `json:"telefone"`
+	WhatsApp    string `json:"whatsapp"`
+	Endereco    string `json:"endereco"`
 	Observacoes string `json:"observacoes"`
 	Ativo       bool   `json:"ativo"`
 }
@@ -35,6 +38,8 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Post("/{id}/ativar", h.ativar)
 }
 
+const camposSelect = `id, nome, COALESCE(cpf,''), COALESCE(telefone,''), COALESCE(whatsapp,''), COALESCE(endereco,''), COALESCE(observacoes,''), ativo`
+
 // list retorna apenas clientes ativos por padrão. Use ?todos=true para
 // incluir os desativados também.
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -50,11 +55,11 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if busca != "" {
 		rows, err = h.pool.Query(r.Context(),
-			`SELECT id, nome, COALESCE(telefone,''), COALESCE(observacoes,''), ativo
+			`SELECT `+camposSelect+`
 			 FROM clientes WHERE nome ILIKE '%' || $1 || '%' `+filtroAtivo+` ORDER BY nome`, busca)
 	} else {
 		rows, err = h.pool.Query(r.Context(),
-			`SELECT id, nome, COALESCE(telefone,''), COALESCE(observacoes,''), ativo
+			`SELECT `+camposSelect+`
 			 FROM clientes WHERE true `+filtroAtivo+` ORDER BY nome`)
 	}
 	if err != nil {
@@ -66,7 +71,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	clientes := []Cliente{}
 	for rows.Next() {
 		var c Cliente
-		if err := rows.Scan(&c.ID, &c.Nome, &c.Telefone, &c.Observacoes, &c.Ativo); err != nil {
+		if err := rows.Scan(&c.ID, &c.Nome, &c.CPF, &c.Telefone, &c.WhatsApp, &c.Endereco, &c.Observacoes, &c.Ativo); err != nil {
 			http.Error(w, "erro ao ler clientes", http.StatusInternalServerError)
 			return
 		}
@@ -85,9 +90,9 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 	var c Cliente
 	err = h.pool.QueryRow(r.Context(),
-		`SELECT id, nome, COALESCE(telefone,''), COALESCE(observacoes,''), ativo
+		`SELECT `+camposSelect+`
 		 FROM clientes WHERE id = $1`, id,
-	).Scan(&c.ID, &c.Nome, &c.Telefone, &c.Observacoes, &c.Ativo)
+	).Scan(&c.ID, &c.Nome, &c.CPF, &c.Telefone, &c.WhatsApp, &c.Endereco, &c.Observacoes, &c.Ativo)
 	if err != nil {
 		http.Error(w, "cliente não encontrado", http.StatusNotFound)
 		return
@@ -108,8 +113,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := h.pool.QueryRow(r.Context(),
-		`INSERT INTO clientes (nome, telefone, observacoes) VALUES ($1, $2, $3) RETURNING id, ativo`,
-		c.Nome, c.Telefone, c.Observacoes,
+		`INSERT INTO clientes (nome, cpf, telefone, whatsapp, endereco, observacoes)
+		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, ativo`,
+		c.Nome, c.CPF, c.Telefone, c.WhatsApp, c.Endereco, c.Observacoes,
 	).Scan(&c.ID, &c.Ativo)
 	if err != nil {
 		http.Error(w, "erro ao criar cliente", http.StatusInternalServerError)
@@ -138,8 +144,9 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tag, err := h.pool.Exec(r.Context(),
-		`UPDATE clientes SET nome = $1, telefone = $2, observacoes = $3 WHERE id = $4`,
-		c.Nome, c.Telefone, c.Observacoes, id,
+		`UPDATE clientes SET nome = $1, cpf = $2, telefone = $3, whatsapp = $4, endereco = $5, observacoes = $6
+		 WHERE id = $7`,
+		c.Nome, c.CPF, c.Telefone, c.WhatsApp, c.Endereco, c.Observacoes, id,
 	)
 	if err != nil {
 		http.Error(w, "erro ao atualizar cliente", http.StatusInternalServerError)

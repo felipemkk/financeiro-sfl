@@ -38,9 +38,21 @@ import { Cliente, Venda } from '../core/models';
             <span class="telefone">{{ telefone || 'Sem telefone cadastrado' }}</span>
           </div>
         </div>
-        @if (observacoes) {
-          <p class="observacoes">{{ observacoes }}</p>
-        }
+
+        <div class="info-lista">
+          @if (cpf) {
+            <div class="info-linha"><mat-icon>badge</mat-icon><span>{{ cpf }}</span></div>
+          }
+          @if (whatsapp) {
+            <div class="info-linha"><mat-icon>chat</mat-icon><span>{{ whatsapp }} (WhatsApp)</span></div>
+          }
+          @if (endereco) {
+            <div class="info-linha"><mat-icon>place</mat-icon><span>{{ endereco }}</span></div>
+          }
+          @if (observacoes) {
+            <div class="info-linha"><mat-icon>notes</mat-icon><span>{{ observacoes }}</span></div>
+          }
+        </div>
 
         <div class="acoes-cliente">
           <button class="btn" (click)="modo.set('editar')">
@@ -81,8 +93,23 @@ import { Cliente, Venda } from '../core/models';
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Telefone (WhatsApp)</mat-label>
-            <input matInput name="telefone" [(ngModel)]="telefone" placeholder="+55 11 99999-9999" />
+            <mat-label>CPF</mat-label>
+            <input matInput name="cpf" [(ngModel)]="cpf" placeholder="000.000.000-00" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Telefone</mat-label>
+            <input matInput name="telefone" [(ngModel)]="telefone" placeholder="(11) 99999-9999" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>WhatsApp</mat-label>
+            <input matInput name="whatsapp" [(ngModel)]="whatsapp" placeholder="+55 11 99999-9999" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Endereço</mat-label>
+            <input matInput name="endereco" [(ngModel)]="endereco" placeholder="Rua, número, bairro, cidade" />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
@@ -217,6 +244,26 @@ import { Cliente, Venda } from '../core/models';
       color: var(--ink-muted);
       margin: 4px 0 0;
     }
+    .info-lista {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .info-linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--ink-muted);
+    }
+    .info-linha mat-icon {
+      color: var(--ink-faint);
+      font-size: 19px;
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+    }
     .acoes-cliente {
       display: flex;
       flex-wrap: wrap;
@@ -302,7 +349,10 @@ import { Cliente, Venda } from '../core/models';
 export class ClienteFormComponent implements OnInit {
   clienteId: number | null = null;
   nome = '';
+  cpf = '';
   telefone = '';
+  whatsapp = '';
+  endereco = '';
   observacoes = '';
   modo = signal<'visualizar' | 'editar'>('editar');
   clienteAtivo = signal(true);
@@ -312,10 +362,13 @@ export class ClienteFormComponent implements OnInit {
   vendas = signal<Venda[]>([]);
   carregandoVendas = signal(false);
   quitandoId = signal<number | null>(null);
+  private retornoParaVenda = false;
 
   constructor(private api: ApiService, private route: ActivatedRoute, private router: Router) {}
 
   async ngOnInit(): Promise<void> {
+    this.retornoParaVenda = this.route.snapshot.queryParamMap.get('retorno') === 'venda';
+
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.clienteId = Number(idParam);
@@ -333,7 +386,10 @@ export class ClienteFormComponent implements OnInit {
 
   private preencherFormulario(cliente: Cliente): void {
     this.nome = cliente.nome;
+    this.cpf = cliente.cpf;
     this.telefone = cliente.telefone;
+    this.whatsapp = cliente.whatsapp;
+    this.endereco = cliente.endereco;
     this.observacoes = cliente.observacoes;
     this.clienteAtivo.set(cliente.ativo);
   }
@@ -413,13 +469,24 @@ export class ClienteFormComponent implements OnInit {
     if (!this.nome.trim()) return;
     this.salvando.set(true);
     try {
-      const payload = { nome: this.nome, telefone: this.telefone, observacoes: this.observacoes };
+      const payload = {
+        nome: this.nome,
+        cpf: this.cpf,
+        telefone: this.telefone,
+        whatsapp: this.whatsapp,
+        endereco: this.endereco,
+        observacoes: this.observacoes,
+      };
       if (this.clienteId) {
         await this.api.atualizarCliente(this.clienteId, payload);
         this.modo.set('visualizar');
       } else {
         const criado = await this.api.criarCliente(payload);
-        this.router.navigate(['/clientes', criado.id]);
+        if (this.retornoParaVenda) {
+          this.router.navigate(['/vendas/nova'], { queryParams: { cliente_id: criado.id } });
+        } else {
+          this.router.navigate(['/clientes', criado.id]);
+        }
         return;
       }
     } finally {

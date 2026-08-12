@@ -240,7 +240,7 @@ export class CobrancaComponent implements OnInit {
   }
 
   linkWhatsapp(p: ParcelaDoMes): string {
-    const telefone = (p.cliente_telefone || '').replace(/\D/g, '');
+    const telefone = (p.cliente_whatsapp || p.cliente_telefone || '').replace(/\D/g, '');
     const dataFormatada = new Date(p.vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
     const mensagem =
       `Oi, ${p.cliente_nome}! Passando para lembrar da parcela ${p.numero}/${p.num_parcelas} ` +

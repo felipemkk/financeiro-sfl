@@ -19,11 +19,16 @@ export class ApiService {
     return firstValueFrom(this.http.get<Cliente>(`${this.base}/clientes/${id}`));
   }
 
-  criarCliente(cliente: Pick<Cliente, 'nome' | 'telefone' | 'observacoes'>): Promise<Cliente> {
+  criarCliente(
+    cliente: Pick<Cliente, 'nome' | 'cpf' | 'telefone' | 'whatsapp' | 'endereco' | 'observacoes'>
+  ): Promise<Cliente> {
     return firstValueFrom(this.http.post<Cliente>(`${this.base}/clientes`, cliente));
   }
 
-  atualizarCliente(id: number, cliente: Pick<Cliente, 'nome' | 'telefone' | 'observacoes'>): Promise<Cliente> {
+  atualizarCliente(
+    id: number,
+    cliente: Pick<Cliente, 'nome' | 'cpf' | 'telefone' | 'whatsapp' | 'endereco' | 'observacoes'>
+  ): Promise<Cliente> {
     return firstValueFrom(this.http.put<Cliente>(`${this.base}/clientes/${id}`, cliente));
   }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -17,6 +17,7 @@ import { Cliente, TipoVenda } from '../core/models';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -46,6 +47,9 @@ import { Cliente, TipoVenda } from '../core/models';
             }
           </mat-select>
         </mat-form-field>
+        <a class="link-nova-cliente" [routerLink]="['/clientes/novo']" [queryParams]="{ retorno: 'venda' }">
+          + Nova cliente
+        </a>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ tipo() === 'emprestimo' ? 'Motivo do empréstimo' : 'Produto' }}</mat-label>
@@ -193,6 +197,17 @@ import { Cliente, TipoVenda } from '../core/models';
       width: 100%;
       margin-bottom: 8px;
     }
+    .link-nova-cliente {
+      display: inline-block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent-ink);
+      text-decoration: none;
+      margin: -4px 0 16px;
+    }
+    .link-nova-cliente:hover {
+      text-decoration: underline;
+    }
     .preview {
       color: var(--ink-muted);
       font-size: 0.875rem;
@@ -224,30 +239,41 @@ import { Cliente, TipoVenda } from '../core/models';
       padding: 4px 16px;
       margin: 0 0 20px;
       background: var(--paper-raised);
+      font-family: var(--font-body);
     }
     .resumo-emprestimo .linha {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      padding: 10px 0;
+      padding: 11px 0;
       border-bottom: 1px solid var(--border);
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: var(--ink-muted);
     }
     .resumo-emprestimo .linha:last-child {
       border-bottom: none;
     }
     .resumo-emprestimo .linha .amt {
+      font-family: var(--font-body);
+      font-variant-numeric: tabular-nums;
       color: var(--ink);
       font-weight: 600;
+      font-size: 0.9375rem;
     }
     .resumo-emprestimo .linha.destaque {
+      margin: 0 -16px;
+      padding: 12px 16px;
+      background: var(--brass-weak);
       color: var(--ink);
       font-weight: 600;
+      border-radius: 0 0 11px 11px;
     }
     .resumo-emprestimo .linha.destaque .amt {
-      color: var(--accent-ink);
-      font-size: 1.0625rem;
+      color: var(--brass);
+      font-size: 1.125rem;
+    }
+    .resumo-emprestimo .linha.destaque.negativo {
+      background: var(--critical-weak);
     }
     .resumo-emprestimo .linha.destaque.negativo .amt {
       color: var(--critical-ink);
