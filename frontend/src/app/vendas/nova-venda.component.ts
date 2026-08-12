@@ -69,20 +69,47 @@ import { Cliente, TipoVenda } from '../core/models';
             <input matInput type="number" min="0.01" step="0.01" name="valorInvestido" [(ngModel)]="valorInvestido" required />
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Taxa de juros (%)</mat-label>
-            <input matInput type="number" min="0" step="0.01" name="taxaJuros" [(ngModel)]="taxaJuros" required />
-          </mat-form-field>
+          <div class="modo-toggle">
+            <button type="button" class="btn btn-sm" [class.btn-primary]="modoCalculo() === 'taxa'" (click)="modoCalculo.set('taxa')">
+              Sei a taxa de juros
+            </button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="modoCalculo() === 'parcela'" (click)="modoCalculo.set('parcela')">
+              Sei o valor da parcela
+            </button>
+          </div>
 
-          @if (valorInvestido && taxaJuros !== null) {
-            <p class="preview">Total a receber: <span class="amt">{{ valorTotalCalculado() | currency:'BRL' }}</span></p>
+          @if (modoCalculo() === 'taxa') {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Taxa de juros (%)</mat-label>
+              <input matInput type="number" min="0" step="0.01" name="taxaJuros" [(ngModel)]="taxaJuros" required />
+            </mat-form-field>
           }
         }
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Número de parcelas</mat-label>
-          <input matInput type="number" min="1" step="1" name="parcelas" [(ngModel)]="numParcelas" required />
-        </mat-form-field>
+        @if (tipo() === 'produto' || modoCalculo() === 'taxa') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Número de parcelas</mat-label>
+            <input matInput type="number" min="1" step="1" name="parcelas" [(ngModel)]="numParcelas" required />
+          </mat-form-field>
+        }
+
+        @if (tipo() === 'emprestimo' && modoCalculo() === 'parcela') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Número de parcelas</mat-label>
+            <input matInput type="number" min="1" step="1" name="parcelasB" [(ngModel)]="numParcelas" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor de cada parcela (R$)</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valorParcela" [(ngModel)]="valorParcela" required />
+          </mat-form-field>
+
+          @if (valorInvestido && valorParcela && numParcelas) {
+            <p class="preview">
+              Taxa de juros calculada: <span class="amt">{{ taxaCalculada() | number:'1.2-2' }}%</span>
+            </p>
+          }
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Data da 1ª parcela</mat-label>
@@ -130,6 +157,16 @@ import { Cliente, TipoVenda } from '../core/models';
     .tipo-toggle .btn {
       flex: 1;
     }
+    .modo-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .btn-sm {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+    }
     .full-width {
       width: 100%;
       margin-bottom: 8px;
@@ -164,11 +201,13 @@ import { Cliente, TipoVenda } from '../core/models';
 export class NovaVendaComponent implements OnInit {
   clientes = signal<Cliente[]>([]);
   tipo = signal<TipoVenda>('produto');
+  modoCalculo = signal<'taxa' | 'parcela'>('taxa');
   clienteId: number | null = null;
   descricaoProduto = '';
   valorTotal: number | null = null;
   valorInvestido: number | null = null;
   taxaJuros: number | null = null;
+  valorParcela: number | null = null;
   numParcelas: number | null = null;
   dataPrimeiraParcela: Date | null = null;
   salvando = signal(false);
@@ -185,11 +224,19 @@ export class NovaVendaComponent implements OnInit {
   }
 
   valorTotalCalculado(): number {
+    if (this.modoCalculo() === 'parcela') {
+      return (this.numParcelas ?? 0) * (this.valorParcela ?? 0);
+    }
     return (this.valorInvestido ?? 0) * (1 + (this.taxaJuros ?? 0) / 100);
   }
 
   valorTotalEfetivo(): number {
     return this.tipo() === 'emprestimo' ? this.valorTotalCalculado() : (this.valorTotal ?? 0);
+  }
+
+  taxaCalculada(): number {
+    if (!this.valorInvestido) return 0;
+    return (this.valorTotalCalculado() / this.valorInvestido - 1) * 100;
   }
 
   lucro(): number {
@@ -203,9 +250,19 @@ export class NovaVendaComponent implements OnInit {
       this.erro.set('Preencha todos os campos.');
       return;
     }
-    if (this.tipo() === 'emprestimo' && (!this.valorInvestido || this.taxaJuros === null)) {
-      this.erro.set('Preencha todos os campos.');
-      return;
+    if (this.tipo() === 'emprestimo') {
+      if (!this.valorInvestido) {
+        this.erro.set('Preencha todos os campos.');
+        return;
+      }
+      if (this.modoCalculo() === 'taxa' && this.taxaJuros === null) {
+        this.erro.set('Preencha todos os campos.');
+        return;
+      }
+      if (this.modoCalculo() === 'parcela' && !this.valorParcela) {
+        this.erro.set('Preencha todos os campos.');
+        return;
+      }
     }
 
     this.salvando.set(true);
