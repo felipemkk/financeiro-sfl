@@ -4,10 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
+import { Marca } from '../core/models';
 import { environment } from '../../environments/environment';
+
+const NOVA_MARCA = '__nova_marca__';
 
 type StatusItem = 'pendente' | 'enviando' | 'ok' | 'erro';
 
@@ -20,7 +24,16 @@ interface ItemLote {
 @Component({
   selector: 'app-vitrine-lote-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+  ],
   template: `
     <div class="page">
       <a class="voltar" [routerLink]="['/vitrine/gerenciar/catalogo', categoria]">
@@ -35,13 +48,39 @@ interface ItemLote {
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Marca</mat-label>
-        <input matInput name="marca" [(ngModel)]="marca" placeholder="Ex: Prada" [disabled]="processando()" />
+        <mat-select name="marca" [(ngModel)]="marca" [disabled]="processando()">
+          @for (m of marcas(); track m.id) {
+            <mat-option [value]="m.nome">{{ m.nome }}</mat-option>
+          }
+          <mat-option [value]="novaMarcaOpcao">+ Adicionar marca</mat-option>
+        </mat-select>
       </mat-form-field>
 
-      <label class="btn upload-btn" [class.desabilitado]="!marca.trim() || processando()">
+      @if (marca === novaMarcaOpcao) {
+        <div class="nova-marca">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nome da nova marca</mat-label>
+            <input matInput name="marcaNova" [(ngModel)]="marcaNovaTexto" placeholder="Ex: Prada" />
+          </mat-form-field>
+          <button
+            type="button"
+            class="btn btn-xs"
+            [disabled]="!marcaNovaTexto.trim() || adicionandoMarca()"
+            (click)="adicionarMarca()"
+          >
+            @if (adicionandoMarca()) {
+              <mat-spinner diameter="14"></mat-spinner>
+            } @else {
+              Adicionar marca
+            }
+          </button>
+        </div>
+      }
+
+      <label class="btn upload-btn" [class.desabilitado]="!marcaValida() || processando()">
         <mat-icon>add_photo_alternate</mat-icon>
         Escolher fotos
-        <input type="file" accept="image/*" multiple (change)="onArquivosSelecionados($event)" [disabled]="!marca.trim() || processando()" hidden />
+        <input type="file" accept="image/*" multiple (change)="onArquivosSelecionados($event)" [disabled]="!marcaValida() || processando()" hidden />
       </label>
 
       @if (erroGeral()) {
@@ -90,6 +129,13 @@ interface ItemLote {
     .full-width {
       width: 100%;
       margin-bottom: 8px;
+    }
+    .nova-marca {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      margin: -4px 0 16px;
     }
     .upload-btn {
       cursor: pointer;
@@ -145,14 +191,42 @@ interface ItemLote {
 export class VitrineLoteAdminComponent implements OnInit {
   categoria = '';
   marca = '';
+  marcaNovaTexto = '';
+  readonly novaMarcaOpcao = NOVA_MARCA;
+  marcas = signal<Marca[]>([]);
+  adicionandoMarca = signal(false);
   itens = signal<ItemLote[]>([]);
   processando = signal(false);
   erroGeral = signal('');
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.categoria = this.route.snapshot.paramMap.get('categoria') ?? '';
+    this.marcas.set(await this.api.listarMarcas());
+  }
+
+  marcaValida(): boolean {
+    return !!this.marca.trim() && this.marca !== NOVA_MARCA;
+  }
+
+  async adicionarMarca(): Promise<void> {
+    const nome = this.marcaNovaTexto.trim();
+    if (!nome) return;
+
+    this.adicionandoMarca.set(true);
+    try {
+      const nova = await this.api.criarMarca(nome);
+      if (!this.marcas().some((m) => m.nome === nova.nome)) {
+        this.marcas.set([...this.marcas(), nova]);
+      }
+      this.marca = nova.nome;
+      this.marcaNovaTexto = '';
+    } catch {
+      this.erroGeral.set('Não foi possível adicionar a marca.');
+    } finally {
+      this.adicionandoMarca.set(false);
+    }
   }
 
   async onArquivosSelecionados(evento: Event): Promise<void> {
@@ -162,8 +236,8 @@ export class VitrineLoteAdminComponent implements OnInit {
     if (arquivos.length === 0) return;
 
     this.erroGeral.set('');
-    if (!this.marca.trim()) {
-      this.erroGeral.set('Preencha a marca antes de escolher as fotos.');
+    if (!this.marcaValida()) {
+      this.erroGeral.set('Selecione a marca antes de escolher as fotos.');
       return;
     }
     if (!environment.cloudinaryCloudName || !environment.cloudinaryUploadPreset) {

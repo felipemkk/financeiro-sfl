@@ -8,10 +8,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
+import { Marca } from '../core/models';
 import { environment } from '../../environments/environment';
 
 const NOVA_CATEGORIA = '__nova__';
 const CATEGORIAS_SUGERIDAS = ['Bolsas', 'Sapatos', 'Acessórios', 'Joias', 'Óculos'];
+const NOVA_MARCA = '__nova_marca__';
 
 interface FotoSlot {
   url: string;
@@ -106,8 +108,37 @@ function novoSlot(): FotoSlot {
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Marca</mat-label>
-          <input matInput name="marca" [(ngModel)]="marca" placeholder="Ex: Hermès" required />
+          <mat-select name="marca" [(ngModel)]="marca" required>
+            @for (m of marcas(); track m.id) {
+              <mat-option [value]="m.nome">{{ m.nome }}</mat-option>
+            }
+            <mat-option [value]="novaMarcaOpcao">+ Adicionar marca</mat-option>
+          </mat-select>
         </mat-form-field>
+
+        @if (marca === novaMarcaOpcao) {
+          <div class="nova-marca">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Nome da nova marca</mat-label>
+              <input matInput name="marcaNova" [(ngModel)]="marcaNovaTexto" placeholder="Ex: Hermès" />
+            </mat-form-field>
+            <button
+              type="button"
+              class="btn btn-xs"
+              [disabled]="!marcaNovaTexto.trim() || adicionandoMarca()"
+              (click)="adicionarMarca()"
+            >
+              @if (adicionandoMarca()) {
+                <mat-spinner diameter="14"></mat-spinner>
+              } @else {
+                Adicionar marca
+              }
+            </button>
+            @if (erroMarca()) {
+              <p class="erro erro-xs">{{ erroMarca() }}</p>
+            }
+          </div>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nome do produto (opcional)</mat-label>
@@ -205,6 +236,13 @@ function novoSlot(): FotoSlot {
       width: 100%;
       margin-bottom: 8px;
     }
+    .nova-marca {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      margin: -4px 0 8px;
+    }
     .checkbox-destaque {
       display: block;
       margin: 8px 0 16px;
@@ -229,6 +267,11 @@ export class VitrineProdutoFormComponent implements OnInit {
   categoriaNovaTexto = '';
   readonly novaCategoriaOpcao = NOVA_CATEGORIA;
   marca = '';
+  marcaNovaTexto = '';
+  readonly novaMarcaOpcao = NOVA_MARCA;
+  marcas = signal<Marca[]>([]);
+  adicionandoMarca = signal(false);
+  erroMarca = signal('');
   nome = '';
   preco: number | null = null;
   imagemUrl = '';
@@ -247,6 +290,8 @@ export class VitrineProdutoFormComponent implements OnInit {
   constructor(private api: ApiService, private route: ActivatedRoute, private router: Router) {}
 
   async ngOnInit(): Promise<void> {
+    this.marcas.set(await this.api.listarMarcas());
+
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) {
       const categoriaParam = this.route.snapshot.queryParamMap.get('categoria');
@@ -270,6 +315,9 @@ export class VitrineProdutoFormComponent implements OnInit {
       this.categorias = [...this.categorias, p.categoria];
     }
     this.marca = p.marca;
+    if (p.marca && !this.marcas().some((m) => m.nome === p.marca)) {
+      this.marcas.set([...this.marcas(), { id: -1, nome: p.marca }]);
+    }
     this.nome = p.nome;
     this.preco = p.preco;
     this.imagemUrl = p.imagem_url;
@@ -297,6 +345,26 @@ export class VitrineProdutoFormComponent implements OnInit {
       this.erroUpload.set('Não foi possível enviar a foto. Tente novamente.');
     } finally {
       this.enviandoFoto.set(false);
+    }
+  }
+
+  async adicionarMarca(): Promise<void> {
+    const nome = this.marcaNovaTexto.trim();
+    if (!nome) return;
+
+    this.erroMarca.set('');
+    this.adicionandoMarca.set(true);
+    try {
+      const nova = await this.api.criarMarca(nome);
+      if (!this.marcas().some((m) => m.nome === nova.nome)) {
+        this.marcas.set([...this.marcas(), nova]);
+      }
+      this.marca = nova.nome;
+      this.marcaNovaTexto = '';
+    } catch {
+      this.erroMarca.set('Não foi possível adicionar a marca.');
+    } finally {
+      this.adicionandoMarca.set(false);
     }
   }
 
@@ -354,7 +422,7 @@ export class VitrineProdutoFormComponent implements OnInit {
     this.erro.set('');
     const categoriaFinal = this.categoria === NOVA_CATEGORIA ? this.categoriaNovaTexto.trim() : this.categoria;
 
-    if (!categoriaFinal || !this.marca) {
+    if (!categoriaFinal || !this.marca || this.marca === NOVA_MARCA) {
       this.erro.set('Preencha categoria e marca.');
       return;
     }

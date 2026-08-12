@@ -38,6 +38,7 @@ import { ProdutoVitrine } from '../core/models';
               }
               <div class="tags">
                 @if (p.destaque) { <span class="pill pill-paga">Destaque</span> }
+                @if (p.capa_categoria) { <span class="pill pill-paga">Capa da categoria</span> }
                 <span class="pill" [class.pill-pendente]="p.ativo" [class.pill-inativo]="!p.ativo">
                   {{ p.ativo ? 'Ativo' : 'Inativo' }}
                 </span>
@@ -49,6 +50,9 @@ import { ProdutoVitrine } from '../core/models';
                 <button class="btn btn-xs" (click)="desativar(p)">Desativar</button>
               } @else {
                 <button class="btn btn-xs" (click)="ativar(p)">Ativar</button>
+              }
+              @if (!p.capa_categoria) {
+                <button class="btn btn-xs" (click)="definirCapa(p)">Definir como capa</button>
               }
             </div>
           </div>
@@ -170,6 +174,14 @@ export class VitrineCatalogoAdminComponent implements OnInit {
     await this.api.desativarProdutoVitrine(p.id);
     p.ativo = false;
     this.produtos.set([...this.produtos()]);
+  }
+
+  async definirCapa(p: ProdutoVitrine): Promise<void> {
+    await this.api.definirCapaCategoria(p.id);
+    this.produtos.set(this.produtos().map((item) => ({
+      ...item,
+      capa_categoria: item.id === p.id,
+    })));
   }
 
   private async carregar(): Promise<void> {

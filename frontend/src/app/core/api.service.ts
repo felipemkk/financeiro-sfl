@@ -7,6 +7,7 @@ import {
   DashboardResumo,
   ImagemCarrossel,
   LancamentoCasa,
+  Marca,
   ParcelaDoMes,
   PosicaoImagem,
   ProdutoVitrine,
@@ -182,10 +183,15 @@ export class ApiService {
     return firstValueFrom(this.http.get<ResumoCasa>(`${this.base}/casa/resumo?ano=${ano}&mes=${mes}`));
   }
 
-  listarProdutosVitrine(opcoes?: { categoria?: string; destaque?: boolean }): Promise<ProdutoVitrine[]> {
+  listarProdutosVitrine(opcoes?: {
+    categoria?: string;
+    destaque?: boolean;
+    capaCategoria?: boolean;
+  }): Promise<ProdutoVitrine[]> {
     const params: string[] = [];
     if (opcoes?.categoria) params.push(`categoria=${encodeURIComponent(opcoes.categoria)}`);
     if (opcoes?.destaque) params.push('destaque=true');
+    if (opcoes?.capaCategoria) params.push('capa_categoria=true');
     const query = params.length ? `?${params.join('&')}` : '';
     return firstValueFrom(this.http.get<ProdutoVitrine[]>(`${this.base}/vitrine/produtos${query}`));
   }
@@ -208,6 +214,12 @@ export class ApiService {
 
   desativarProdutoVitrine(id: number): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/vitrine/admin/produtos/${id}/desativar`, {}));
+  }
+
+  definirCapaCategoria(id: number): Promise<ProdutoVitrine> {
+    return firstValueFrom(
+      this.http.post<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos/${id}/capa-categoria`, {})
+    );
   }
 
   excluirProdutoVitrine(id: number): Promise<void> {
@@ -234,5 +246,13 @@ export class ApiService {
 
   excluirImagemCarrossel(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/carrossel/${id}`));
+  }
+
+  listarMarcas(): Promise<Marca[]> {
+    return firstValueFrom(this.http.get<Marca[]>(`${this.base}/vitrine/admin/marcas`));
+  }
+
+  criarMarca(nome: string): Promise<Marca> {
+    return firstValueFrom(this.http.post<Marca>(`${this.base}/vitrine/admin/marcas`, { nome }));
   }
 }

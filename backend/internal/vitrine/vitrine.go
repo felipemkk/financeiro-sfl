@@ -31,37 +31,41 @@ func (h *Handler) AdminRoutes(r chi.Router) {
 	r.Put("/produtos/{id}", h.atualizar)
 	r.Post("/produtos/{id}/ativar", h.ativar)
 	r.Post("/produtos/{id}/desativar", h.desativar)
+	r.Post("/produtos/{id}/capa-categoria", h.definirCapaCategoria)
 	r.Delete("/produtos/{id}", h.excluir)
 	r.Get("/carrossel", h.listarCarrosselAdmin)
 	r.Post("/carrossel", h.adicionarCarrossel)
 	r.Delete("/carrossel/{id}", h.excluirCarrossel)
+	r.Get("/marcas", h.listarMarcas)
+	r.Post("/marcas", h.criarMarca)
 }
 
 type produtoResponse struct {
-	ID         int     `json:"id"`
-	Categoria  string  `json:"categoria"`
-	Marca      string  `json:"marca"`
-	Nome       string  `json:"nome"`
-	Preco      float64 `json:"preco"`
-	ImagemURL  string  `json:"imagem_url"`
-	FotoExtra1 string  `json:"foto_extra_1"`
-	FotoExtra2 string  `json:"foto_extra_2"`
-	FotoExtra3 string  `json:"foto_extra_3"`
-	FotoExtra4 string  `json:"foto_extra_4"`
-	Destaque   bool    `json:"destaque"`
-	Ativo      bool    `json:"ativo"`
+	ID            int     `json:"id"`
+	Categoria     string  `json:"categoria"`
+	Marca         string  `json:"marca"`
+	Nome          string  `json:"nome"`
+	Preco         float64 `json:"preco"`
+	ImagemURL     string  `json:"imagem_url"`
+	FotoExtra1    string  `json:"foto_extra_1"`
+	FotoExtra2    string  `json:"foto_extra_2"`
+	FotoExtra3    string  `json:"foto_extra_3"`
+	FotoExtra4    string  `json:"foto_extra_4"`
+	Destaque      bool    `json:"destaque"`
+	CapaCategoria bool    `json:"capa_categoria"`
+	Ativo         bool    `json:"ativo"`
 }
 
 const camposSelect = `id, categoria, COALESCE(marca,''), nome, preco, imagem_url,
 	COALESCE(foto_extra_1,''), COALESCE(foto_extra_2,''), COALESCE(foto_extra_3,''), COALESCE(foto_extra_4,''),
-	destaque, ativo`
+	destaque, capa_categoria, ativo`
 
 func escanear(row interface {
 	Scan(dest ...interface{}) error
 }) (produtoResponse, error) {
 	var p produtoResponse
 	err := row.Scan(&p.ID, &p.Categoria, &p.Marca, &p.Nome, &p.Preco, &p.ImagemURL,
-		&p.FotoExtra1, &p.FotoExtra2, &p.FotoExtra3, &p.FotoExtra4, &p.Destaque, &p.Ativo)
+		&p.FotoExtra1, &p.FotoExtra2, &p.FotoExtra3, &p.FotoExtra4, &p.Destaque, &p.CapaCategoria, &p.Ativo)
 	return p, err
 }
 
@@ -74,6 +78,9 @@ func (h *Handler) listarPublico(w http.ResponseWriter, r *http.Request) {
 	}
 	if destaque := r.URL.Query().Get("destaque"); destaque == "true" {
 		query += ` AND destaque = true`
+	}
+	if capa := r.URL.Query().Get("capa_categoria"); capa == "true" {
+		query += ` AND capa_categoria = true`
 	}
 	query += ` ORDER BY criado_em DESC`
 
@@ -235,6 +242,52 @@ func (h *Handler) setAtivo(w http.ResponseWriter, r *http.Request, ativo bool) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) definirCapaCategoria(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	tx, err := h.pool.Begin(ctx)
+	if err != nil {
+		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	var categoria string
+	if err := tx.QueryRow(ctx, `SELECT categoria FROM vitrine_produtos WHERE id = $1`, id).Scan(&categoria); err != nil {
+		http.Error(w, "produto não encontrado", http.StatusNotFound)
+		return
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE vitrine_produtos SET capa_categoria = false WHERE categoria = $1 AND capa_categoria = true`, categoria,
+	); err != nil {
+		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
+		return
+	}
+	if _, err := tx.Exec(ctx, `UPDATE vitrine_produtos SET capa_categoria = true WHERE id = $1`, id); err != nil {
+		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(ctx); err != nil {
+		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
+		return
+	}
+
+	p, err := h.carregar(r, id)
+	if err != nil {
+		http.Error(w, "erro ao carregar produto", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(p)
+}
+
 func (h *Handler) excluir(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -373,4 +426,63 @@ func (h *Handler) excluirCarrossel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type marcaResponse struct {
+	ID   int    `json:"id"`
+	Nome string `json:"nome"`
+}
+
+func (h *Handler) listarMarcas(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.pool.Query(r.Context(), `SELECT id, nome FROM vitrine_marcas ORDER BY nome`)
+	if err != nil {
+		http.Error(w, "erro ao buscar marcas", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	marcas := []marcaResponse{}
+	for rows.Next() {
+		var m marcaResponse
+		if err := rows.Scan(&m.ID, &m.Nome); err != nil {
+			http.Error(w, "erro ao ler marcas", http.StatusInternalServerError)
+			return
+		}
+		marcas = append(marcas, m)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(marcas)
+}
+
+type marcaRequest struct {
+	Nome string `json:"nome"`
+}
+
+func (h *Handler) criarMarca(w http.ResponseWriter, r *http.Request) {
+	var req marcaRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "corpo inválido", http.StatusBadRequest)
+		return
+	}
+	if req.Nome == "" {
+		http.Error(w, "dados obrigatórios: nome", http.StatusBadRequest)
+		return
+	}
+
+	var m marcaResponse
+	err := h.pool.QueryRow(r.Context(),
+		`INSERT INTO vitrine_marcas (nome) VALUES ($1)
+		 ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome
+		 RETURNING id, nome`,
+		req.Nome,
+	).Scan(&m.ID, &m.Nome)
+	if err != nil {
+		http.Error(w, "erro ao criar marca", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(m)
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
@@ -25,15 +25,34 @@ import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component'
       <section class="secao-catalogo">
         <p class="rotulo-secao">CATÁLOGO</p>
 
+        @if (!carregando() && marcasDisponiveis().length > 1) {
+          <div class="filtro-marcas">
+            <button
+              type="button"
+              class="chip-marca"
+              [class.ativo]="marcaFiltro() === ''"
+              (click)="marcaFiltro.set('')"
+            >Todas</button>
+            @for (m of marcasDisponiveis(); track m) {
+              <button
+                type="button"
+                class="chip-marca"
+                [class.ativo]="marcaFiltro() === m"
+                (click)="marcaFiltro.set(m)"
+              >{{ m }}</button>
+            }
+          </div>
+        }
+
         @if (carregando()) {
           <p class="carregando">Carregando…</p>
-        } @else if (produtos().length === 0) {
+        } @else if (produtosFiltrados().length === 0) {
           <div class="vazio">
             <p>Em breve, novidades por aqui.</p>
           </div>
         } @else {
           <div class="grid-produtos">
-            @for (p of produtos(); track p.id) {
+            @for (p of produtosFiltrados(); track p.id) {
               <button type="button" class="card-produto" (click)="produtoSelecionado.set(p)">
                 <div class="card-produto-imagem">
                   <img [src]="p.imagem_url" [alt]="p.nome || p.marca" />
@@ -108,6 +127,27 @@ import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component'
       padding: 40px 24px;
       max-width: 1280px;
       margin: 0 auto;
+    }
+    .filtro-marcas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: -8px 0 28px;
+    }
+    .chip-marca {
+      border: 1px solid var(--v-border);
+      background: none;
+      color: var(--v-ink-muted);
+      font-family: var(--font-nav);
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      padding: 7px 16px;
+      cursor: pointer;
+    }
+    .chip-marca.ativo {
+      background: var(--v-preto);
+      border-color: var(--v-preto);
+      color: #fff;
     }
     .carregando, .vazio {
       color: var(--v-ink-muted);
@@ -187,6 +227,23 @@ import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component'
       .grid-produtos { grid-template-columns: repeat(2, 1fr); }
       .rodape { grid-template-columns: repeat(2, 1fr); }
     }
+    @media (max-width: 600px) {
+      .rodape {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 22px 20px;
+        margin-top: 12px;
+      }
+      .selo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+      }
+      .selo svg { margin-bottom: 0; flex: 0 0 auto; width: 20px; height: 20px; }
+      .selo-titulo { font-size: 0.6875rem; margin: 0 0 2px; }
+      .selo-texto { font-size: 0.6875rem; line-height: 1.4; }
+    }
   `],
 })
 export class VitrineCategoriaComponent implements OnInit {
@@ -194,6 +251,16 @@ export class VitrineCategoriaComponent implements OnInit {
   produtos = signal<ProdutoVitrine[]>([]);
   carregando = signal(true);
   produtoSelecionado = signal<ProdutoVitrine | null>(null);
+  marcaFiltro = signal('');
+
+  marcasDisponiveis = computed(() =>
+    [...new Set(this.produtos().map((p) => p.marca))].sort((a, b) => a.localeCompare(b))
+  );
+
+  produtosFiltrados = computed(() => {
+    const marca = this.marcaFiltro();
+    return marca ? this.produtos().filter((p) => p.marca === marca) : this.produtos();
+  });
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
 
