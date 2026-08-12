@@ -106,17 +106,17 @@ function novoSlot(): FotoSlot {
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Marca</mat-label>
-          <input matInput name="marca" [(ngModel)]="marca" placeholder="Ex: Hermès" />
+          <input matInput name="marca" [(ngModel)]="marca" placeholder="Ex: Hermès" required />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Nome do produto</mat-label>
-          <input matInput name="nome" [(ngModel)]="nome" placeholder="Ex: Birkin 25 Togo Black" required />
+          <mat-label>Nome do produto (opcional)</mat-label>
+          <input matInput name="nome" [(ngModel)]="nome" placeholder="Ex: Birkin 25 Togo Black" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Preço (R$)</mat-label>
-          <input matInput type="number" min="0.01" step="0.01" name="preco" [(ngModel)]="preco" required />
+          <mat-label>Preço (R$) (opcional)</mat-label>
+          <input matInput type="number" min="0.01" step="0.01" name="preco" [(ngModel)]="preco" />
         </mat-form-field>
 
         <mat-checkbox name="destaque" [(ngModel)]="destaque" class="checkbox-destaque">
@@ -354,8 +354,8 @@ export class VitrineProdutoFormComponent implements OnInit {
     this.erro.set('');
     const categoriaFinal = this.categoria === NOVA_CATEGORIA ? this.categoriaNovaTexto.trim() : this.categoria;
 
-    if (!categoriaFinal || !this.nome || !this.preco) {
-      this.erro.set('Preencha categoria, nome e preço.');
+    if (!categoriaFinal || !this.marca) {
+      this.erro.set('Preencha categoria e marca.');
       return;
     }
     if (!this.imagemUrl) {
@@ -369,7 +369,7 @@ export class VitrineProdutoFormComponent implements OnInit {
         categoria: categoriaFinal,
         marca: this.marca,
         nome: this.nome,
-        preco: this.preco,
+        preco: this.preco ?? 0,
         imagem_url: this.imagemUrl,
         foto_extra_1: this.extras[0].url,
         foto_extra_2: this.extras[1].url,

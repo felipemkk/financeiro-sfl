@@ -140,8 +140,8 @@ func (h *Handler) criar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "corpo inválido", http.StatusBadRequest)
 		return
 	}
-	if req.Categoria == "" || req.Nome == "" || req.Preco <= 0 || req.ImagemURL == "" {
-		http.Error(w, "dados obrigatórios: categoria, nome, preco, imagem_url", http.StatusBadRequest)
+	if req.Categoria == "" || req.Marca == "" || req.ImagemURL == "" {
+		http.Error(w, "dados obrigatórios: categoria, marca, imagem_url", http.StatusBadRequest)
 		return
 	}
 
@@ -179,8 +179,8 @@ func (h *Handler) atualizar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "corpo inválido", http.StatusBadRequest)
 		return
 	}
-	if req.Categoria == "" || req.Nome == "" || req.Preco <= 0 || req.ImagemURL == "" {
-		http.Error(w, "dados obrigatórios: categoria, nome, preco, imagem_url", http.StatusBadRequest)
+	if req.Categoria == "" || req.Marca == "" || req.ImagemURL == "" {
+		http.Error(w, "dados obrigatórios: categoria, marca, imagem_url", http.StatusBadRequest)
 		return
 	}
 

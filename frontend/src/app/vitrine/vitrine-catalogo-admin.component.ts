@@ -15,7 +15,12 @@ import { ProdutoVitrine } from '../core/models';
       <a class="voltar" routerLink="/vitrine/gerenciar">
         <mat-icon>arrow_back</mat-icon> Voltar
       </a>
-      <p class="section-label">Catálogo — {{ categoria }}</p>
+      <div class="topo">
+        <p class="section-label">Catálogo — {{ categoria }}</p>
+        <a class="lote-link" [routerLink]="['/vitrine/gerenciar/catalogo', categoria, 'lote']">
+          <mat-icon>library_add</mat-icon> Postagem em massa
+        </a>
+      </div>
 
       @if (carregando()) {
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
@@ -24,11 +29,13 @@ import { ProdutoVitrine } from '../core/models';
       } @else {
         @for (p of produtos(); track p.id) {
           <div class="card produto-card" [class.inativo]="!p.ativo">
-            <img class="thumb" [src]="p.imagem_url" [alt]="p.nome" />
+            <img class="thumb" [src]="p.imagem_url" [alt]="p.nome || p.marca" />
             <div class="info">
-              <p class="nome">{{ p.nome }}</p>
+              <p class="nome">{{ p.nome || p.marca }}</p>
               <p class="detalhe">{{ p.categoria }} @if (p.marca) { — {{ p.marca }} }</p>
-              <p class="preco amt">{{ p.preco | currency:'BRL' }}</p>
+              @if (p.preco > 0) {
+                <p class="preco amt">{{ p.preco | currency:'BRL' }}</p>
+              }
               <div class="tags">
                 @if (p.destaque) { <span class="pill pill-paga">Destaque</span> }
                 <span class="pill" [class.pill-pendente]="p.ativo" [class.pill-inativo]="!p.ativo">
@@ -70,6 +77,22 @@ import { ProdutoVitrine } from '../core/models';
       margin-bottom: 12px;
     }
     .voltar mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .topo .section-label { margin: 0; }
+    .lote-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: var(--accent-ink);
+      text-decoration: none;
+    }
+    .lote-link mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .centro {
       display: flex;
       justify-content: center;

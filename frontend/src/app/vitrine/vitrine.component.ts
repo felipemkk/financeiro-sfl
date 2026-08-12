@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { ProdutoVitrine } from '../core/models';
-import { linkWhatsapp } from './vitrine.constants';
+import { linkWhatsappProduto as gerarLinkWhatsappProduto } from './vitrine.constants';
 import { VitrineHeaderComponent } from './vitrine-header.component';
 import { VitrineHeroComponent } from './vitrine-hero.component';
 import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component';
@@ -95,8 +95,12 @@ o tempo"
                   <img [src]="p.imagem_url" [alt]="p.nome" />
                 </button>
                 <p class="card-produto-marca">{{ p.marca | uppercase }}</p>
-                <p class="card-produto-nome">{{ p.nome }}</p>
-                <p class="card-produto-preco">{{ p.preco | currency:'BRL' }}</p>
+                @if (p.nome) {
+                  <p class="card-produto-nome">{{ p.nome }}</p>
+                }
+                @if (p.preco > 0) {
+                  <p class="card-produto-preco">{{ p.preco | currency:'BRL' }}</p>
+                }
                 <a class="card-produto-consultar" [href]="linkWhatsappProduto(p)" target="_blank" rel="noopener">Consultar</a>
               </div>
             }
@@ -240,6 +244,7 @@ o tempo"
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;
     }
     .card-produto-marca {
       font-size: 0.6875rem;
@@ -320,7 +325,6 @@ export class VitrineComponent implements OnInit {
   }
 
   linkWhatsappProduto(p: ProdutoVitrine): string {
-    const mensagem = `Olá! Tenho interesse em ${p.nome}${p.marca ? ' (' + p.marca + ')' : ''}, no valor de ${p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Ainda está disponível?`;
-    return linkWhatsapp(mensagem);
+    return gerarLinkWhatsappProduto(p);
   }
 }

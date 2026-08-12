@@ -110,6 +110,12 @@ export const routes: Routes = [
       import('./vitrine/vitrine-catalogo-admin.component').then((m) => m.VitrineCatalogoAdminComponent),
   },
   {
+    path: 'vitrine/gerenciar/catalogo/:categoria/lote',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-lote-admin.component').then((m) => m.VitrineLoteAdminComponent),
+  },
+  {
     path: 'vitrine/gerenciar/:id',
     canActivate: [authGuard],
     loadComponent: () =>

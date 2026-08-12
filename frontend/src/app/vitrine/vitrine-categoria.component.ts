@@ -36,11 +36,15 @@ import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component'
             @for (p of produtos(); track p.id) {
               <button type="button" class="card-produto" (click)="produtoSelecionado.set(p)">
                 <div class="card-produto-imagem">
-                  <img [src]="p.imagem_url" [alt]="p.nome" />
+                  <img [src]="p.imagem_url" [alt]="p.nome || p.marca" />
                 </div>
                 <p class="card-produto-marca">{{ p.marca | uppercase }}</p>
-                <p class="card-produto-nome">{{ p.nome }}</p>
-                <p class="card-produto-preco">{{ p.preco | currency:'BRL' }}</p>
+                @if (p.nome) {
+                  <p class="card-produto-nome">{{ p.nome }}</p>
+                }
+                @if (p.preco > 0) {
+                  <p class="card-produto-preco">{{ p.preco | currency:'BRL' }}</p>
+                }
               </button>
             }
           </div>
@@ -134,6 +138,7 @@ import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component'
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;
       transition: transform 0.2s ease;
     }
     .card-produto:hover .card-produto-imagem img {

@@ -91,6 +91,7 @@ import { ApiService } from '../core/api.service';
       aspect-ratio: 4 / 3.4;
       border-radius: 2px;
       object-fit: cover;
+      object-position: center top;
     }
     .placeholder-imagem {
       background: linear-gradient(135deg, var(--v-bg-alt), var(--v-border));

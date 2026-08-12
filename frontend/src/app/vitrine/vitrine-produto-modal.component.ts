@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProdutoVitrine } from '../core/models';
-import { linkWhatsapp } from './vitrine.constants';
+import { linkWhatsappProduto } from './vitrine.constants';
 
 @Component({
   selector: 'app-vitrine-produto-modal',
@@ -16,7 +16,7 @@ import { linkWhatsapp } from './vitrine.constants';
           </button>
 
           <div class="galeria">
-            <img [src]="fotos()[indiceAtual()]" [alt]="produto.nome" />
+            <img [src]="fotos()[indiceAtual()]" [alt]="produto.nome || produto.marca" />
             @if (fotos().length > 1) {
               <button type="button" class="nav anterior" (click)="anterior()" aria-label="Foto anterior">‹</button>
               <button type="button" class="nav proxima" (click)="proxima()" aria-label="Próxima foto">›</button>
@@ -32,11 +32,13 @@ import { linkWhatsapp } from './vitrine.constants';
 
           <div class="info">
             <p class="marca">{{ produto.marca | uppercase }}</p>
-            <p class="nome">{{ produto.nome }}</p>
-            <p class="preco">{{ produto.preco | currency:'BRL' }}</p>
-            @if (linkContato()) {
-              <a class="consultar" [href]="linkContato()" target="_blank" rel="noopener">Consultar no WhatsApp</a>
+            @if (produto.nome) {
+              <p class="nome">{{ produto.nome }}</p>
             }
+            @if (produto.preco > 0) {
+              <p class="preco">{{ produto.preco | currency:'BRL' }}</p>
+            }
+            <a class="consultar" [href]="linkContato()" target="_blank" rel="noopener">Consultar no WhatsApp</a>
           </div>
         </div>
       </div>
@@ -87,6 +89,7 @@ import { linkWhatsapp } from './vitrine.constants';
       width: 100%;
       aspect-ratio: 1;
       object-fit: cover;
+      object-position: center top;
       display: block;
     }
     .nav {
@@ -197,7 +200,6 @@ export class VitrineProdutoModalComponent implements OnChanges {
 
   linkContato(): string {
     if (!this.produto) return '';
-    const mensagem = `Olá! Tenho interesse em ${this.produto.nome}${this.produto.marca ? ' (' + this.produto.marca + ')' : ''}, no valor de ${this.produto.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Ainda está disponível?`;
-    return linkWhatsapp(mensagem);
+    return linkWhatsappProduto(this.produto);
   }
 }
