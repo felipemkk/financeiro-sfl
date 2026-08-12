@@ -1,0 +1,1 @@
+ALTER TABLE vitrine_carrossel ADD COLUMN IF NOT EXISTS posicao TEXT NOT NULL DEFAULT 'center';

@@ -8,6 +8,7 @@ import {
   ImagemCarrossel,
   LancamentoCasa,
   ParcelaDoMes,
+  PosicaoImagem,
   ProdutoVitrine,
   ResumoCasa,
   TipoLancamentoCasa,
@@ -225,9 +226,9 @@ export class ApiService {
     );
   }
 
-  adicionarImagemCarrossel(escopo: string, imagemUrl: string): Promise<ImagemCarrossel> {
+  adicionarImagemCarrossel(escopo: string, imagemUrl: string, posicao: PosicaoImagem = 'center'): Promise<ImagemCarrossel> {
     return firstValueFrom(
-      this.http.post<ImagemCarrossel>(`${this.base}/vitrine/admin/carrossel`, { escopo, imagem_url: imagemUrl })
+      this.http.post<ImagemCarrossel>(`${this.base}/vitrine/admin/carrossel`, { escopo, imagem_url: imagemUrl, posicao })
     );
   }
 

@@ -1,6 +1,9 @@
 import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../core/api.service';
+import { ImagemCarrossel } from '../core/models';
+
+const MAPA_POSICAO: Record<string, string> = { top: 'center top', center: 'center center', bottom: 'center bottom' };
 
 @Component({
   selector: 'app-vitrine-hero',
@@ -30,7 +33,7 @@ import { ApiService } from '../core/api.service';
       </div>
       <div class="hero-imagem">
         @if (imagemAtual()) {
-          <img [src]="imagemAtual()" alt="" />
+          <img [src]="imagemAtual()" [style.object-position]="posicaoAtual()" alt="" />
         } @else {
           <div class="placeholder-imagem"></div>
         }
@@ -91,7 +94,6 @@ import { ApiService } from '../core/api.service';
       aspect-ratio: 4 / 3.4;
       border-radius: 2px;
       object-fit: cover;
-      object-position: center top;
     }
     .placeholder-imagem {
       background: linear-gradient(135deg, var(--v-bg-alt), var(--v-border));
@@ -109,7 +111,7 @@ export class VitrineHeroComponent implements OnInit, OnDestroy {
   @Input() ctaTexto = '';
   @Input() ctaHref = '';
 
-  imagens = signal<{ id: number; imagem_url: string }[]>([]);
+  imagens = signal<ImagemCarrossel[]>([]);
   indiceAtual = signal(0);
 
   private intervalo: ReturnType<typeof setInterval> | null = null;
@@ -133,6 +135,11 @@ export class VitrineHeroComponent implements OnInit, OnDestroy {
 
   imagemAtual(): string | null {
     return this.imagens()[this.indiceAtual()]?.imagem_url ?? null;
+  }
+
+  posicaoAtual(): string {
+    const posicao = this.imagens()[this.indiceAtual()]?.posicao ?? 'center';
+    return MAPA_POSICAO[posicao] ?? MAPA_POSICAO['center'];
   }
 
   irPara(indice: number): void {

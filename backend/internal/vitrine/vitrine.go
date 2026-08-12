@@ -263,11 +263,14 @@ type imagemCarrossel struct {
 	ID        int    `json:"id"`
 	Escopo    string `json:"escopo"`
 	ImagemURL string `json:"imagem_url"`
+	Posicao   string `json:"posicao"`
 }
+
+var posicoesValidas = map[string]bool{"top": true, "center": true, "bottom": true}
 
 func (h *Handler) listarImagensCarrossel(ctx context.Context, escopo string) ([]imagemCarrossel, error) {
 	rows, err := h.pool.Query(ctx,
-		`SELECT id, escopo, imagem_url FROM vitrine_carrossel WHERE escopo = $1 ORDER BY id`, escopo)
+		`SELECT id, escopo, imagem_url, posicao FROM vitrine_carrossel WHERE escopo = $1 ORDER BY id`, escopo)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +279,7 @@ func (h *Handler) listarImagensCarrossel(ctx context.Context, escopo string) ([]
 	imagens := []imagemCarrossel{}
 	for rows.Next() {
 		var img imagemCarrossel
-		if err := rows.Scan(&img.ID, &img.Escopo, &img.ImagemURL); err != nil {
+		if err := rows.Scan(&img.ID, &img.Escopo, &img.ImagemURL, &img.Posicao); err != nil {
 			return nil, err
 		}
 		imagens = append(imagens, img)
@@ -317,6 +320,7 @@ func (h *Handler) listarCarrosselAdmin(w http.ResponseWriter, r *http.Request) {
 type carrosselRequest struct {
 	Escopo    string `json:"escopo"`
 	ImagemURL string `json:"imagem_url"`
+	Posicao   string `json:"posicao"`
 }
 
 func (h *Handler) adicionarCarrossel(w http.ResponseWriter, r *http.Request) {
@@ -329,12 +333,19 @@ func (h *Handler) adicionarCarrossel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dados obrigatórios: escopo, imagem_url", http.StatusBadRequest)
 		return
 	}
+	if req.Posicao == "" {
+		req.Posicao = "center"
+	}
+	if !posicoesValidas[req.Posicao] {
+		http.Error(w, "posicao inválida: use top, center ou bottom", http.StatusBadRequest)
+		return
+	}
 
 	var img imagemCarrossel
 	err := h.pool.QueryRow(r.Context(),
-		`INSERT INTO vitrine_carrossel (escopo, imagem_url) VALUES ($1, $2) RETURNING id, escopo, imagem_url`,
-		req.Escopo, req.ImagemURL,
-	).Scan(&img.ID, &img.Escopo, &img.ImagemURL)
+		`INSERT INTO vitrine_carrossel (escopo, imagem_url, posicao) VALUES ($1, $2, $3) RETURNING id, escopo, imagem_url, posicao`,
+		req.Escopo, req.ImagemURL, req.Posicao,
+	).Scan(&img.ID, &img.Escopo, &img.ImagemURL, &img.Posicao)
 	if err != nil {
 		http.Error(w, "erro ao adicionar imagem", http.StatusInternalServerError)
 		return

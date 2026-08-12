@@ -97,10 +97,13 @@ export interface ResumoCasa {
   por_categoria: CategoriaResumoCasa[];
 }
 
+export type PosicaoImagem = 'top' | 'center' | 'bottom';
+
 export interface ImagemCarrossel {
   id: number;
   escopo: string;
   imagem_url: string;
+  posicao: PosicaoImagem;
 }
 
 export interface ProdutoVitrine {

@@ -4,8 +4,10 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
-import { ImagemCarrossel } from '../core/models';
+import { ImagemCarrossel, PosicaoImagem } from '../core/models';
 import { environment } from '../../environments/environment';
+
+const ROTULOS_POSICAO: Record<PosicaoImagem, string> = { top: 'Topo', center: 'Centro', bottom: 'Base' };
 
 @Component({
   selector: 'app-vitrine-carrossel-admin',
@@ -24,10 +26,26 @@ import { environment } from '../../environments/environment';
       @if (carregando()) {
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
       } @else {
+        <div class="selecao-posicao">
+          <span class="rotulo-posicao">Enquadramento da próxima foto:</span>
+          <div class="opcoes-posicao">
+            @for (opcao of opcoesPosicao; track opcao) {
+              <button
+                type="button"
+                class="opcao-posicao"
+                [class.ativa]="posicaoSelecionada() === opcao"
+                (click)="posicaoSelecionada.set(opcao)"
+              >{{ rotulosPosicao[opcao] }}</button>
+            }
+          </div>
+          <p class="ajuda-posicao">Escolha onde fica a parte importante da foto (ex.: "Base" para mostrar os pés em fotos de sapato).</p>
+        </div>
+
         <div class="grid-fotos">
           @for (img of imagens(); track img.id) {
             <div class="foto-card">
-              <img [src]="img.imagem_url" alt="" />
+              <img [src]="img.imagem_url" [style.object-position]="mapaPosicaoCss[img.posicao]" alt="" />
+              <span class="badge-posicao">{{ rotulosPosicao[img.posicao] }}</span>
               <button type="button" class="btn btn-xs btn-danger" (click)="excluir(img)">Excluir</button>
             </div>
           }
@@ -76,6 +94,39 @@ import { environment } from '../../environments/environment';
       justify-content: center;
       padding: 32px 0;
     }
+    .selecao-posicao {
+      margin-bottom: 20px;
+    }
+    .rotulo-posicao {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .opcoes-posicao {
+      display: flex;
+      gap: 8px;
+    }
+    .opcao-posicao {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: none;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      color: var(--ink-muted);
+    }
+    .opcao-posicao.ativa {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--paper-raised);
+    }
+    .ajuda-posicao {
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+      margin: 8px 0 0;
+    }
     .grid-fotos {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -93,6 +144,10 @@ import { environment } from '../../environments/environment';
       object-fit: cover;
       border-radius: 10px;
       background: var(--border);
+    }
+    .badge-posicao {
+      font-size: 0.6875rem;
+      color: var(--ink-muted);
     }
     .foto-card.adicionar {
       aspect-ratio: 1;
@@ -132,6 +187,10 @@ export class VitrineCarrosselAdminComponent implements OnInit {
   carregando = signal(true);
   enviando = signal(false);
   erro = signal('');
+  posicaoSelecionada = signal<PosicaoImagem>('center');
+  opcoesPosicao: PosicaoImagem[] = ['top', 'center', 'bottom'];
+  rotulosPosicao = ROTULOS_POSICAO;
+  mapaPosicaoCss: Record<PosicaoImagem, string> = { top: 'center top', center: 'center center', bottom: 'center bottom' };
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
 
@@ -167,7 +226,7 @@ export class VitrineCarrosselAdminComponent implements OnInit {
       );
       if (!resp.ok) throw new Error('upload falhou');
       const data = await resp.json();
-      const nova = await this.api.adicionarImagemCarrossel(this.escopo, data.secure_url);
+      const nova = await this.api.adicionarImagemCarrossel(this.escopo, data.secure_url, this.posicaoSelecionada());
       this.imagens.set([...this.imagens(), nova]);
     } catch {
       this.erro.set('Não foi possível enviar a foto. Tente novamente.');
