@@ -9,7 +9,7 @@ import { LancamentoCasa, TipoLancamentoCasa } from '../core/models';
 import { CasaNavComponent } from './casa-nav.component';
 
 type FiltroStatus = 'todas' | 'paga' | 'pendente' | 'atrasada';
-type Ordenacao = 'nenhuma' | 'maior' | 'menor';
+type Ordenacao = 'nenhuma' | 'maior' | 'menor' | 'vencimento_proximo' | 'vencimento_distante';
 
 const NOVA_CATEGORIA = '__nova__';
 
@@ -63,6 +63,14 @@ const NOVA_CATEGORIA = '__nova__';
         </button>
         <button type="button" class="btn btn-sm" [class.btn-primary]="ordenacao() === 'menor'" (click)="alternarOrdenacao('menor')">
           <mat-icon>arrow_upward</mat-icon> Menor valor
+        </button>
+      </div>
+      <div class="filtros">
+        <button type="button" class="btn btn-sm" [class.btn-primary]="ordenacao() === 'vencimento_proximo'" (click)="alternarOrdenacao('vencimento_proximo')">
+          <mat-icon>event</mat-icon> Vencimento mais próximo
+        </button>
+        <button type="button" class="btn btn-sm" [class.btn-primary]="ordenacao() === 'vencimento_distante'" (click)="alternarOrdenacao('vencimento_distante')">
+          <mat-icon>event</mat-icon> Vencimento mais distante
         </button>
       </div>
 
@@ -382,8 +390,21 @@ export class CasaLancamentosComponent implements OnInit {
       resultado = [...resultado].sort((a, b) => b.valor_previsto - a.valor_previsto);
     } else if (this.ordenacao() === 'menor') {
       resultado = [...resultado].sort((a, b) => a.valor_previsto - b.valor_previsto);
+    } else if (this.ordenacao() === 'vencimento_proximo') {
+      resultado = [...resultado].sort((a, b) => this.compararVencimento(a, b, 'asc'));
+    } else if (this.ordenacao() === 'vencimento_distante') {
+      resultado = [...resultado].sort((a, b) => this.compararVencimento(a, b, 'desc'));
     }
     return resultado;
+  }
+
+  // Itens sem data de vencimento sempre ficam por último, nas duas direções.
+  private compararVencimento(a: LancamentoCasa, b: LancamentoCasa, ordem: 'asc' | 'desc'): number {
+    if (!a.data_vencimento && !b.data_vencimento) return 0;
+    if (!a.data_vencimento) return 1;
+    if (!b.data_vencimento) return -1;
+    const cmp = a.data_vencimento.localeCompare(b.data_vencimento);
+    return ordem === 'asc' ? cmp : -cmp;
   }
 
   alternarFiltroStatus(status: FiltroStatus): void {

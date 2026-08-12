@@ -4,11 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
 import { TipoLancamentoCasa, TipoRecorrencia } from '../core/models';
+
+const NOVA_CATEGORIA = '__nova__';
 
 @Component({
   selector: 'app-casa-form',
@@ -19,6 +22,7 @@ import { TipoLancamentoCasa, TipoRecorrencia } from '../core/models';
     RouterLink,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatProgressSpinnerModule,
@@ -58,13 +62,20 @@ import { TipoLancamentoCasa, TipoRecorrencia } from '../core/models';
       <form (ngSubmit)="salvar()">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Categoria</mat-label>
-          <input matInput name="categoria" [(ngModel)]="categoria" required list="categorias-lista" />
-          <datalist id="categorias-lista">
+          <mat-select name="categoria" [(ngModel)]="categoria" required>
             @for (c of categorias(); track c) {
-              <option [value]="c"></option>
+              <mat-option [value]="c">{{ c }}</mat-option>
             }
-          </datalist>
+            <mat-option [value]="novaCategoriaOpcao">+ Nova categoria</mat-option>
+          </mat-select>
         </mat-form-field>
+
+        @if (categoria === novaCategoriaOpcao) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nome da nova categoria</mat-label>
+            <input matInput name="categoriaNova" [(ngModel)]="categoriaNovaTexto" required />
+          </mat-form-field>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Descrição</mat-label>
@@ -170,6 +181,8 @@ export class CasaFormComponent implements OnInit {
   tipoRecorrencia = signal<TipoRecorrencia>('pontual');
   categorias = signal<string[]>([]);
   categoria = '';
+  categoriaNovaTexto = '';
+  readonly novaCategoriaOpcao = NOVA_CATEGORIA;
   descricao = '';
   valorPrevisto: number | null = null;
   dataVencimento: Date | null = null;
@@ -244,8 +257,9 @@ export class CasaFormComponent implements OnInit {
   async salvar(): Promise<void> {
     this.erro.set('');
     const ehParcelada = !this.modoEdicao && this.tipoRecorrencia() === 'parcelada';
+    const categoriaFinal = this.categoria === NOVA_CATEGORIA ? this.categoriaNovaTexto.trim() : this.categoria;
 
-    if (!this.categoria || !this.descricao) {
+    if (!categoriaFinal || !this.descricao) {
       this.erro.set('Preencha categoria e descrição.');
       return;
     }
@@ -265,7 +279,7 @@ export class CasaFormComponent implements OnInit {
 
       if (this.modoEdicao && this.lancamentoId) {
         await this.api.atualizarLancamentoCasa(this.lancamentoId, {
-          categoria: this.categoria,
+          categoria: categoriaFinal,
           descricao: this.descricao,
           valor_previsto: this.valorPrevisto!,
           data_vencimento: dataVencimentoStr,
@@ -275,7 +289,7 @@ export class CasaFormComponent implements OnInit {
         await this.api.criarLancamentoCasa({
           tipo: this.tipo,
           tipo_recorrencia: 'parcelada',
-          categoria: this.categoria,
+          categoria: categoriaFinal,
           descricao: this.descricao,
           valor_previsto: this.valorParcelaParcelada!,
           data_vencimento: dataVencimentoStr,
@@ -288,7 +302,7 @@ export class CasaFormComponent implements OnInit {
         await this.api.criarLancamentoCasa({
           tipo: this.tipo,
           tipo_recorrencia: this.tipoRecorrencia(),
-          categoria: this.categoria,
+          categoria: categoriaFinal,
           descricao: this.descricao,
           valor_previsto: this.valorPrevisto!,
           data_vencimento: dataVencimentoStr,
