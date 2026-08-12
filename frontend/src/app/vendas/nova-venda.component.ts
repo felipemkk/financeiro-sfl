@@ -71,10 +71,10 @@ import { Cliente, TipoVenda } from '../core/models';
 
           <div class="modo-toggle">
             <button type="button" class="btn btn-sm" [class.btn-primary]="modoCalculo() === 'taxa'" (click)="modoCalculo.set('taxa')">
-              Sei a taxa de juros
+              Taxa de juros
             </button>
             <button type="button" class="btn btn-sm" [class.btn-primary]="modoCalculo() === 'parcela'" (click)="modoCalculo.set('parcela')">
-              Sei o valor da parcela
+              Valor da parcela
             </button>
           </div>
 
@@ -103,12 +103,6 @@ import { Cliente, TipoVenda } from '../core/models';
             <mat-label>Valor de cada parcela (R$)</mat-label>
             <input matInput type="number" min="0.01" step="0.01" name="valorParcela" [(ngModel)]="valorParcela" required />
           </mat-form-field>
-
-          @if (valorInvestido && valorParcela && numParcelas) {
-            <p class="preview">
-              Taxa de juros calculada: <span class="amt">{{ taxaCalculada() | number:'1.2-2' }}%</span>
-            </p>
-          }
         }
 
         <mat-form-field appearance="outline" class="full-width">
@@ -118,14 +112,42 @@ import { Cliente, TipoVenda } from '../core/models';
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
 
-        @if (valorTotalEfetivo() && numParcelas) {
-          <p class="preview">{{ numParcelas }}x de {{ (valorTotalEfetivo() / numParcelas) | currency:'BRL' }}</p>
-        }
-
-        @if (valorTotalEfetivo()) {
-          <p class="lucro-tag" [class.negativo]="lucro() < 0">
-            {{ tipo() === 'emprestimo' ? 'Juros' : 'Lucro' }}: <span class="amt">{{ lucro() | currency:'BRL' }}</span>
-          </p>
+        @if (tipo() === 'produto') {
+          @if (valorTotalEfetivo() && numParcelas) {
+            <p class="preview">{{ numParcelas }}x de {{ (valorTotalEfetivo() / numParcelas) | currency:'BRL' }}</p>
+          }
+          @if (valorTotalEfetivo()) {
+            <p class="lucro-tag" [class.negativo]="lucro() < 0">
+              Lucro: <span class="amt">{{ lucro() | currency:'BRL' }}</span>
+            </p>
+          }
+        } @else if (valorInvestido && numParcelas && valorTotalEfetivo()) {
+          <div class="resumo-emprestimo">
+            <div class="linha">
+              <span>Valor emprestado</span>
+              <span class="amt">{{ valorInvestido | currency:'BRL' }}</span>
+            </div>
+            <div class="linha">
+              <span>Parcelamento</span>
+              <span class="amt">{{ numParcelas }}x de {{ (valorTotalEfetivo() / numParcelas) | currency:'BRL' }}</span>
+            </div>
+            <div class="linha">
+              <span>Valor total</span>
+              <span class="amt">{{ valorTotalEfetivo() | currency:'BRL' }}</span>
+            </div>
+            <div class="linha">
+              <span>Taxa de juros total</span>
+              <span class="amt">{{ taxaCalculada() | number:'1.2-2' }}%</span>
+            </div>
+            <div class="linha">
+              <span>Taxa de juros mensal</span>
+              <span class="amt">{{ taxaMensal() | number:'1.2-2' }}%</span>
+            </div>
+            <div class="linha destaque" [class.negativo]="lucro() < 0">
+              <span>Lucro total</span>
+              <span class="amt">{{ lucro() | currency:'BRL' }}</span>
+            </div>
+          </div>
         }
 
         @if (erro()) {
@@ -196,6 +218,40 @@ import { Cliente, TipoVenda } from '../core/models';
       margin: 0 0 12px;
     }
     .btn-block { margin-top: 8px; }
+    .resumo-emprestimo {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px 16px;
+      margin: 0 0 20px;
+      background: var(--paper-raised);
+    }
+    .resumo-emprestimo .linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--ink-muted);
+    }
+    .resumo-emprestimo .linha:last-child {
+      border-bottom: none;
+    }
+    .resumo-emprestimo .linha .amt {
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .resumo-emprestimo .linha.destaque {
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .resumo-emprestimo .linha.destaque .amt {
+      color: var(--accent-ink);
+      font-size: 1.0625rem;
+    }
+    .resumo-emprestimo .linha.destaque.negativo .amt {
+      color: var(--critical-ink);
+    }
   `],
 })
 export class NovaVendaComponent implements OnInit {
@@ -237,6 +293,11 @@ export class NovaVendaComponent implements OnInit {
   taxaCalculada(): number {
     if (!this.valorInvestido) return 0;
     return (this.valorTotalCalculado() / this.valorInvestido - 1) * 100;
+  }
+
+  taxaMensal(): number {
+    if (!this.numParcelas) return 0;
+    return this.taxaCalculada() / this.numParcelas;
   }
 
   lucro(): number {
