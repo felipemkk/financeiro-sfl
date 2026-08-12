@@ -16,6 +16,13 @@
   --critical-weak: #F3DFD8;
   --critical-ink: #6E2E23;
 
+  --pill-paga-bg: #DCE6DE;
+  --pill-paga-ink: #23392F;
+  --pill-pendente-bg: #F0E6CF;
+  --pill-pendente-ink: #93723F;
+  --pill-atrasada-bg: #F3DFD8;
+  --pill-atrasada-ink: #6E2E23;
+
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
 
@@ -40,6 +47,14 @@
     --critical-weak: #3A211C;
     --critical-ink: #EBB3A5;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+
+    /* status badges need more punch than the subtle card tints above */
+    --pill-paga-bg: #2C6B4A;
+    --pill-paga-ink: #C8F7DC;
+    --pill-pendente-bg: #5C4419;
+    --pill-pendente-ink: #FFDD9A;
+    --pill-atrasada-bg: #7A3128;
+    --pill-atrasada-ink: #FFD2C4;
   }
 }
 
@@ -82,9 +97,9 @@ body {
   background: currentColor;
   flex: 0 0 auto;
 }
-.pill-paga { background: var(--accent-weak); color: var(--accent-ink); }
-.pill-pendente { background: var(--brass-weak); color: var(--brass); }
-.pill-atrasada { background: var(--critical-weak); color: var(--critical-ink); }
+.pill-paga { background: var(--pill-paga-bg); color: var(--pill-paga-ink); }
+.pill-pendente { background: var(--pill-pendente-bg); color: var(--pill-pendente-ink); }
+.pill-atrasada { background: var(--pill-atrasada-bg); color: var(--pill-atrasada-ink); }
 .pill-inativo { background: var(--border); color: var(--ink-muted); }
 .pill-inativo::before { display: none; }
 
