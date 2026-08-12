@@ -84,7 +84,7 @@ const NOVA_CATEGORIA = '__nova__';
         <p class="vazio">Nenhum{{ tipo === 'receita' ? 'a receita' : 'a despesa' }} encontrada.</p>
       } @else {
         @for (l of lancamentosFiltrados(); track l.id) {
-          <div class="card lancamento-card" [class.paga]="l.status === 'paga'">
+          <div class="card lancamento-card" [class.paga]="l.status === 'paga'" [class.atrasada]="l.status === 'atrasada'">
             <div class="card-top">
               <span class="nome-conta">
                 {{ l.descricao }} <span class="categoria-inline">- {{ l.categoria }}</span>
@@ -247,6 +247,10 @@ const NOVA_CATEGORIA = '__nova__';
     }
     .lancamento-card.paga {
       background: var(--accent-weak);
+      border-color: transparent;
+    }
+    .lancamento-card.atrasada {
+      background: var(--critical-weak);
       border-color: transparent;
     }
     .card-top {
