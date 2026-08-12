@@ -6,7 +6,15 @@ import { ProdutoVitrine } from '../core/models';
 
 const NUMERO_WHATSAPP_LOJA = '5534997340076';
 
-const MARCAS = ['Chanel', 'Louis Vuitton', 'Gucci', 'Prada', 'Saint Laurent', 'Dior', 'Bottega Veneta'];
+const MARCAS = [
+  { nome: 'Chanel', logo: null },
+  { nome: 'Louis Vuitton', logo: 'marcas/louis-vuitton.png' },
+  { nome: 'Gucci', logo: 'marcas/gucci.png' },
+  { nome: 'Prada', logo: 'marcas/prada.png' },
+  { nome: 'Saint Laurent', logo: 'marcas/saint-laurent.png' },
+  { nome: 'Dior', logo: 'marcas/dior.png' },
+  { nome: 'Bottega Veneta', logo: null },
+];
 
 const CATEGORIAS = [
   { nome: 'Bolsas', clicavel: true },
@@ -101,8 +109,12 @@ const CATEGORIAS = [
       <section class="secao-marcas">
         <p class="rotulo-secao">MARCAS EXCLUSIVAS</p>
         <div class="carrossel-marcas">
-          @for (marca of marcas; track marca) {
-            <span class="marca-nome">{{ marca }}</span>
+          @for (marca of marcas; track marca.nome) {
+            @if (marca.logo) {
+              <img class="marca-logo" [src]="marca.logo" [alt]="marca.nome" />
+            } @else {
+              <span class="marca-nome">{{ marca.nome }}</span>
+            }
           }
         </div>
       </section>
@@ -392,6 +404,13 @@ const CATEGORIAS = [
       letter-spacing: 0.04em;
       white-space: nowrap;
       color: var(--v-ink);
+      flex: 0 0 auto;
+    }
+    .marca-logo {
+      height: 30px;
+      width: auto;
+      max-width: 140px;
+      object-fit: contain;
       flex: 0 0 auto;
     }
 
