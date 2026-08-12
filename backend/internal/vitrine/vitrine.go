@@ -36,6 +36,8 @@ func (h *Handler) AdminRoutes(r chi.Router) {
 	r.Get("/carrossel", h.listarCarrosselAdmin)
 	r.Post("/carrossel", h.adicionarCarrossel)
 	r.Delete("/carrossel/{id}", h.excluirCarrossel)
+	r.Get("/marcas", h.listarMarcas)
+	r.Post("/marcas", h.criarMarca)
 }
 
 type produtoResponse struct {
@@ -413,4 +415,63 @@ func (h *Handler) excluirCarrossel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type marcaResponse struct {
+	ID   int    `json:"id"`
+	Nome string `json:"nome"`
+}
+
+func (h *Handler) listarMarcas(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.pool.Query(r.Context(), `SELECT id, nome FROM vitrine_marcas ORDER BY nome`)
+	if err != nil {
+		http.Error(w, "erro ao buscar marcas", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	marcas := []marcaResponse{}
+	for rows.Next() {
+		var m marcaResponse
+		if err := rows.Scan(&m.ID, &m.Nome); err != nil {
+			http.Error(w, "erro ao ler marcas", http.StatusInternalServerError)
+			return
+		}
+		marcas = append(marcas, m)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(marcas)
+}
+
+type marcaRequest struct {
+	Nome string `json:"nome"`
+}
+
+func (h *Handler) criarMarca(w http.ResponseWriter, r *http.Request) {
+	var req marcaRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "corpo inválido", http.StatusBadRequest)
+		return
+	}
+	if req.Nome == "" {
+		http.Error(w, "dados obrigatórios: nome", http.StatusBadRequest)
+		return
+	}
+
+	var m marcaResponse
+	err := h.pool.QueryRow(r.Context(),
+		`INSERT INTO vitrine_marcas (nome) VALUES ($1)
+		 ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome
+		 RETURNING id, nome`,
+		req.Nome,
+	).Scan(&m.ID, &m.Nome)
+	if err != nil {
+		http.Error(w, "erro ao criar marca", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(m)
 }

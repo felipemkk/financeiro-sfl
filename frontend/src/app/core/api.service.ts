@@ -7,6 +7,7 @@ import {
   DashboardResumo,
   ImagemCarrossel,
   LancamentoCasa,
+  Marca,
   ParcelaDoMes,
   ProdutoVitrine,
   ResumoCasa,
@@ -244,5 +245,13 @@ export class ApiService {
 
   excluirImagemCarrossel(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/carrossel/${id}`));
+  }
+
+  listarMarcas(): Promise<Marca[]> {
+    return firstValueFrom(this.http.get<Marca[]>(`${this.base}/vitrine/admin/marcas`));
+  }
+
+  criarMarca(nome: string): Promise<Marca> {
+    return firstValueFrom(this.http.post<Marca>(`${this.base}/vitrine/admin/marcas`, { nome }));
   }
 }
