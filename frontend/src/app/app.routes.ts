@@ -76,5 +76,27 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./casa/casa-form.component').then((m) => m.CasaFormComponent),
   },
+  {
+    path: 'vitrine',
+    loadComponent: () => import('./vitrine/vitrine.component').then((m) => m.VitrineComponent),
+  },
+  {
+    path: 'vitrine/gerenciar',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-admin.component').then((m) => m.VitrineAdminComponent),
+  },
+  {
+    path: 'vitrine/gerenciar/novo',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-produto-form.component').then((m) => m.VitrineProdutoFormComponent),
+  },
+  {
+    path: 'vitrine/gerenciar/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-produto-form.component').then((m) => m.VitrineProdutoFormComponent),
+  },
   { path: '**', redirectTo: 'home' },
 ];

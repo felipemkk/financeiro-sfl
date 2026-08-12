@@ -45,13 +45,22 @@ import { DashboardResumo } from '../core/models';
         </div>
       }
 
-      <a class="card casa-link" routerLink="/casa">
+      <a class="card action-link" routerLink="/casa">
         <mat-icon>savings</mat-icon>
-        <div class="casa-texto">
-          <p class="casa-titulo">Gastos da Casa</p>
-          <p class="casa-sub">Contas, salários e orçamento doméstico</p>
+        <div class="action-texto">
+          <p class="action-titulo">Gastos da Casa</p>
+          <p class="action-sub">Contas, salários e orçamento doméstico</p>
         </div>
-        <mat-icon class="casa-seta">chevron_right</mat-icon>
+        <mat-icon class="action-seta">chevron_right</mat-icon>
+      </a>
+
+      <a class="card action-link" routerLink="/vitrine/gerenciar">
+        <mat-icon>storefront</mat-icon>
+        <div class="action-texto">
+          <p class="action-titulo">Vitrine</p>
+          <p class="action-sub">Catálogo público de bolsas e sapatos</p>
+        </div>
+        <mat-icon class="action-seta">chevron_right</mat-icon>
       </a>
     </div>
   `,
@@ -104,31 +113,31 @@ import { DashboardResumo } from '../core/models';
     }
     .stat.critical .stat-value { color: var(--critical-ink); }
     .stat.accent .stat-value { color: var(--accent-ink); }
-    .casa-link {
+    .action-link {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 14px;
+      margin-top: 10px;
       text-decoration: none;
       color: inherit;
     }
-    .casa-link mat-icon:first-child {
+    .action-link mat-icon:first-child {
       color: var(--brass);
       flex: 0 0 auto;
     }
-    .casa-texto { flex: 1; min-width: 0; }
-    .casa-titulo {
+    .action-texto { flex: 1; min-width: 0; }
+    .action-titulo {
       margin: 0 0 2px;
       font-family: var(--font-display);
       font-size: 0.9375rem;
       color: var(--ink);
     }
-    .casa-sub {
+    .action-sub {
       margin: 0;
       font-size: 0.75rem;
       color: var(--ink-muted);
     }
-    .casa-seta {
+    .action-seta {
       color: var(--ink-faint);
       flex: 0 0 auto;
     }

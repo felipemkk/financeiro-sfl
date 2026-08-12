@@ -7,6 +7,7 @@ import {
   DashboardResumo,
   LancamentoCasa,
   ParcelaDoMes,
+  ProdutoVitrine,
   ResumoCasa,
   TipoLancamentoCasa,
   TipoRecorrencia,
@@ -164,5 +165,47 @@ export class ApiService {
 
   obterResumoCasa(ano: number, mes: number): Promise<ResumoCasa> {
     return firstValueFrom(this.http.get<ResumoCasa>(`${this.base}/casa/resumo?ano=${ano}&mes=${mes}`));
+  }
+
+  listarProdutosVitrine(opcoes?: { categoria?: string; destaque?: boolean }): Promise<ProdutoVitrine[]> {
+    const params: string[] = [];
+    if (opcoes?.categoria) params.push(`categoria=${encodeURIComponent(opcoes.categoria)}`);
+    if (opcoes?.destaque) params.push('destaque=true');
+    const query = params.length ? `?${params.join('&')}` : '';
+    return firstValueFrom(this.http.get<ProdutoVitrine[]>(`${this.base}/vitrine/produtos${query}`));
+  }
+
+  listarProdutosVitrineAdmin(): Promise<ProdutoVitrine[]> {
+    return firstValueFrom(this.http.get<ProdutoVitrine[]>(`${this.base}/vitrine/admin/produtos`));
+  }
+
+  criarProdutoVitrine(produto: {
+    categoria: string;
+    marca: string;
+    nome: string;
+    preco: number;
+    imagem_url: string;
+    destaque: boolean;
+  }): Promise<ProdutoVitrine> {
+    return firstValueFrom(this.http.post<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos`, produto));
+  }
+
+  atualizarProdutoVitrine(
+    id: number,
+    produto: { categoria: string; marca: string; nome: string; preco: number; imagem_url: string; destaque: boolean }
+  ): Promise<ProdutoVitrine> {
+    return firstValueFrom(this.http.put<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos/${id}`, produto));
+  }
+
+  ativarProdutoVitrine(id: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/vitrine/admin/produtos/${id}/ativar`, {}));
+  }
+
+  desativarProdutoVitrine(id: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/vitrine/admin/produtos/${id}/desativar`, {}));
+  }
+
+  excluirProdutoVitrine(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/produtos/${id}`));
   }
 }

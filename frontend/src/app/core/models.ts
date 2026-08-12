@@ -96,3 +96,14 @@ export interface ResumoCasa {
   saldo_realizado: number;
   por_categoria: CategoriaResumoCasa[];
 }
+
+export interface ProdutoVitrine {
+  id: number;
+  categoria: string;
+  marca: string;
+  nome: string;
+  preco: number;
+  imagem_url: string;
+  destaque: boolean;
+  ativo: boolean;
+}

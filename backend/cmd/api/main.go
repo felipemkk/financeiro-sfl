@@ -18,6 +18,7 @@ import (
 	"financeiro-sfl/backend/internal/db"
 	"financeiro-sfl/backend/internal/parcela"
 	"financeiro-sfl/backend/internal/venda"
+	"financeiro-sfl/backend/internal/vitrine"
 )
 
 func main() {
@@ -57,6 +58,7 @@ func main() {
 	parcelaHandler := parcela.NewHandler(pool)
 	dashboardHandler := dashboard.NewHandler(pool)
 	casaHandler := casa.NewHandler(pool)
+	vitrineHandler := vitrine.NewHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -73,6 +75,7 @@ func main() {
 	})
 
 	r.Post("/auth/login", authService.Login)
+	r.Route("/vitrine", vitrineHandler.PublicRoutes)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authService.Middleware)
@@ -81,6 +84,7 @@ func main() {
 		r.Route("/parcelas", parcelaHandler.Routes)
 		r.Route("/dashboard", dashboardHandler.Routes)
 		r.Route("/casa", casaHandler.Routes)
+		r.Route("/vitrine/admin", vitrineHandler.AdminRoutes)
 	})
 
 	log.Printf("servidor rodando na porta %s", port)
