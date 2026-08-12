@@ -148,11 +148,12 @@ export class AppComponent {
       .subscribe((evento) => this.urlAtual.set(evento.urlAfterRedirects));
   }
 
-  // A vitrine pública (/vitrine) é uma página separada, sem o shell do app —
-  // mesmo quando quem está navegando está logada. A área de gestão
-  // (/vitrine/gerenciar) continua usando o shell normal.
+  // A vitrine pública (/vitrine e /vitrine/categoria/...) é uma área separada,
+  // sem o shell do app — mesmo quando quem está navegando está logada. A área
+  // de gestão (/vitrine/gerenciar) continua usando o shell normal.
   mostrarShell(): boolean {
     const caminho = this.urlAtual().split('?')[0];
-    return this.auth.logado() && caminho !== '/vitrine';
+    const ehVitrinePublica = caminho === '/vitrine' || caminho.startsWith('/vitrine/categoria/');
+    return this.auth.logado() && !ehVitrinePublica;
   }
 }

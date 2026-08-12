@@ -1,59 +1,56 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ApiService } from '../core/api.service';
-import { ProdutoVitrine } from '../core/models';
+
+const CATEGORIAS = ['Bolsas', 'Sapatos', 'Acessórios', 'Joias', 'Óculos'];
 
 @Component({
   selector: 'app-vitrine-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatIconModule],
   template: `
     <div class="page">
       <div class="topo">
-        <p class="section-label">Vitrine</p>
+        <p class="section-label">Editar Vitrine</p>
         <a class="ver-publica" href="/vitrine" target="_blank" rel="noopener">
           Ver vitrine pública <mat-icon>open_in_new</mat-icon>
         </a>
       </div>
 
-      @if (carregando()) {
-        <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
-      } @else if (produtos().length === 0) {
-        <p class="vazio">Nenhum produto cadastrado ainda.</p>
-      } @else {
-        @for (p of produtos(); track p.id) {
-          <div class="card produto-card" [class.inativo]="!p.ativo">
-            <img class="thumb" [src]="p.imagem_url" [alt]="p.nome" />
-            <div class="info">
-              <p class="nome">{{ p.nome }}</p>
-              <p class="detalhe">{{ p.categoria }} @if (p.marca) { — {{ p.marca }} }</p>
-              <p class="preco amt">{{ p.preco | currency:'BRL' }}</p>
-              <div class="tags">
-                @if (p.destaque) { <span class="pill pill-paga">Destaque</span> }
-                <span class="pill" [class.pill-pendente]="p.ativo" [class.pill-inativo]="!p.ativo">
-                  {{ p.ativo ? 'Ativo' : 'Inativo' }}
-                </span>
+      <a class="card secao-link destaque" [routerLink]="['/vitrine/gerenciar/carrossel', 'principal']">
+        <mat-icon>view_carousel</mat-icon>
+        <div class="secao-texto">
+          <p class="secao-titulo">Carrossel Principal</p>
+          <p class="secao-sub">Fotos grandes da página inicial da vitrine</p>
+        </div>
+        <mat-icon class="seta">chevron_right</mat-icon>
+      </a>
+
+      @for (cat of categorias; track cat) {
+        <div class="secao-categoria">
+          <p class="secao-categoria-titulo">{{ cat }}</p>
+          <div class="secao-categoria-links">
+            <a class="card secao-link" [routerLink]="['/vitrine/gerenciar/carrossel', cat]">
+              <mat-icon>view_carousel</mat-icon>
+              <div class="secao-texto">
+                <p class="secao-titulo">Carrossel principal</p>
+                <p class="secao-sub">Fotos grandes da página de {{ cat }}</p>
               </div>
-            </div>
-            <div class="acoes">
-              <a class="btn btn-xs" [routerLink]="['/vitrine/gerenciar', p.id]">Editar</a>
-              @if (p.ativo) {
-                <button class="btn btn-xs" (click)="desativar(p)">Desativar</button>
-              } @else {
-                <button class="btn btn-xs" (click)="ativar(p)">Ativar</button>
-              }
-            </div>
+              <mat-icon class="seta">chevron_right</mat-icon>
+            </a>
+            <a class="card secao-link" [routerLink]="['/vitrine/gerenciar/catalogo', cat]">
+              <mat-icon>grid_view</mat-icon>
+              <div class="secao-texto">
+                <p class="secao-titulo">Catálogo</p>
+                <p class="secao-sub">Produtos cadastrados em {{ cat }}</p>
+              </div>
+              <mat-icon class="seta">chevron_right</mat-icon>
+            </a>
           </div>
-        }
+        </div>
       }
     </div>
-
-    <a class="fab-add" routerLink="/vitrine/gerenciar/novo" aria-label="Novo produto">
-      <mat-icon>add</mat-icon>
-    </a>
   `,
   styles: [`
     .page {
@@ -66,7 +63,7 @@ import { ProdutoVitrine } from '../core/models';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .topo .section-label { margin: 0; }
     .ver-publica {
@@ -78,89 +75,55 @@ import { ProdutoVitrine } from '../core/models';
       text-decoration: none;
     }
     .ver-publica mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    .centro {
-      display: flex;
-      justify-content: center;
-      padding: 32px 0;
-    }
-    .vazio {
-      color: var(--ink-muted);
-      text-align: center;
-      padding: 32px 0;
-    }
-    .produto-card {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-      align-items: flex-start;
-    }
-    .produto-card.inativo { opacity: 0.6; }
-    .thumb {
-      width: 64px;
-      height: 64px;
-      object-fit: cover;
-      border-radius: 8px;
-      flex: 0 0 auto;
-      background: var(--border);
-    }
-    .info { flex: 1; min-width: 0; }
-    .nome { margin: 0 0 2px; font-weight: 600; font-size: 0.9375rem; }
-    .detalhe { margin: 0 0 4px; font-size: 0.8125rem; color: var(--ink-muted); }
-    .preco { margin: 0 0 6px; font-size: 0.9375rem; }
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .acoes {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: 0 0 auto;
-    }
-    .btn-xs { padding: 6px 10px; font-size: 0.75rem; }
-    .fab-add {
-      position: fixed;
-      right: 20px;
-      bottom: calc(84px + env(safe-area-inset-bottom));
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: var(--paper-raised);
+    .secao-link {
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow);
+      gap: 12px;
       text-decoration: none;
+      color: inherit;
+      margin-bottom: 10px;
     }
-    .fab-add:hover { background: var(--accent-ink); }
+    .secao-link.destaque {
+      margin-bottom: 24px;
+      background: var(--brass-weak);
+      border-color: transparent;
+    }
+    .secao-link mat-icon:first-child {
+      color: var(--brass);
+      flex: 0 0 auto;
+    }
+    .secao-texto { flex: 1; min-width: 0; }
+    .secao-titulo {
+      margin: 0 0 2px;
+      font-family: var(--font-display);
+      font-size: 0.9375rem;
+      color: var(--ink);
+    }
+    .secao-sub {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+    }
+    .seta {
+      color: var(--ink-faint);
+      flex: 0 0 auto;
+    }
+    .secao-categoria {
+      margin-bottom: 20px;
+    }
+    .secao-categoria-titulo {
+      font-family: var(--font-display);
+      font-size: 1.0625rem;
+      color: var(--ink);
+      margin: 0 0 10px;
+    }
+    .secao-categoria-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
   `],
 })
-export class VitrineAdminComponent implements OnInit {
-  produtos = signal<ProdutoVitrine[]>([]);
-  carregando = signal(true);
-
-  constructor(private api: ApiService) {}
-
-  async ngOnInit(): Promise<void> {
-    await this.carregar();
-  }
-
-  async ativar(p: ProdutoVitrine): Promise<void> {
-    await this.api.ativarProdutoVitrine(p.id);
-    p.ativo = true;
-    this.produtos.set([...this.produtos()]);
-  }
-
-  async desativar(p: ProdutoVitrine): Promise<void> {
-    await this.api.desativarProdutoVitrine(p.id);
-    p.ativo = false;
-    this.produtos.set([...this.produtos()]);
-  }
-
-  private async carregar(): Promise<void> {
-    this.carregando.set(true);
-    try {
-      this.produtos.set(await this.api.listarProdutosVitrineAdmin());
-    } finally {
-      this.carregando.set(false);
-    }
-  }
+export class VitrineAdminComponent {
+  categorias = CATEGORIAS;
 }

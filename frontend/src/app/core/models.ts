@@ -97,6 +97,12 @@ export interface ResumoCasa {
   por_categoria: CategoriaResumoCasa[];
 }
 
+export interface ImagemCarrossel {
+  id: number;
+  escopo: string;
+  imagem_url: string;
+}
+
 export interface ProdutoVitrine {
   id: number;
   categoria: string;
@@ -104,6 +110,10 @@ export interface ProdutoVitrine {
   nome: string;
   preco: number;
   imagem_url: string;
+  foto_extra_1: string;
+  foto_extra_2: string;
+  foto_extra_3: string;
+  foto_extra_4: string;
   destaque: boolean;
   ativo: boolean;
 }

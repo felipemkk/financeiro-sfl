@@ -81,6 +81,11 @@ export const routes: Routes = [
     loadComponent: () => import('./vitrine/vitrine.component').then((m) => m.VitrineComponent),
   },
   {
+    path: 'vitrine/categoria/:categoria',
+    loadComponent: () =>
+      import('./vitrine/vitrine-categoria.component').then((m) => m.VitrineCategoriaComponent),
+  },
+  {
     path: 'vitrine/gerenciar',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -91,6 +96,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./vitrine/vitrine-produto-form.component').then((m) => m.VitrineProdutoFormComponent),
+  },
+  {
+    path: 'vitrine/gerenciar/carrossel/:escopo',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-carrossel-admin.component').then((m) => m.VitrineCarrosselAdminComponent),
+  },
+  {
+    path: 'vitrine/gerenciar/catalogo/:categoria',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./vitrine/vitrine-catalogo-admin.component').then((m) => m.VitrineCatalogoAdminComponent),
   },
   {
     path: 'vitrine/gerenciar/:id',

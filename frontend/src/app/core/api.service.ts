@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import {
   Cliente,
   DashboardResumo,
+  ImagemCarrossel,
   LancamentoCasa,
   ParcelaDoMes,
   ProdutoVitrine,
@@ -14,6 +15,19 @@ import {
   TipoVenda,
   Venda,
 } from './models';
+
+interface ProdutoVitrinePayload {
+  categoria: string;
+  marca: string;
+  nome: string;
+  preco: number;
+  imagem_url: string;
+  foto_extra_1: string;
+  foto_extra_2: string;
+  foto_extra_3: string;
+  foto_extra_4: string;
+  destaque: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -179,21 +193,11 @@ export class ApiService {
     return firstValueFrom(this.http.get<ProdutoVitrine[]>(`${this.base}/vitrine/admin/produtos`));
   }
 
-  criarProdutoVitrine(produto: {
-    categoria: string;
-    marca: string;
-    nome: string;
-    preco: number;
-    imagem_url: string;
-    destaque: boolean;
-  }): Promise<ProdutoVitrine> {
+  criarProdutoVitrine(produto: ProdutoVitrinePayload): Promise<ProdutoVitrine> {
     return firstValueFrom(this.http.post<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos`, produto));
   }
 
-  atualizarProdutoVitrine(
-    id: number,
-    produto: { categoria: string; marca: string; nome: string; preco: number; imagem_url: string; destaque: boolean }
-  ): Promise<ProdutoVitrine> {
+  atualizarProdutoVitrine(id: number, produto: ProdutoVitrinePayload): Promise<ProdutoVitrine> {
     return firstValueFrom(this.http.put<ProdutoVitrine>(`${this.base}/vitrine/admin/produtos/${id}`, produto));
   }
 
@@ -207,5 +211,27 @@ export class ApiService {
 
   excluirProdutoVitrine(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/produtos/${id}`));
+  }
+
+  listarCarrossel(escopo: string): Promise<ImagemCarrossel[]> {
+    return firstValueFrom(
+      this.http.get<ImagemCarrossel[]>(`${this.base}/vitrine/carrossel?escopo=${encodeURIComponent(escopo)}`)
+    );
+  }
+
+  listarCarrosselAdmin(escopo: string): Promise<ImagemCarrossel[]> {
+    return firstValueFrom(
+      this.http.get<ImagemCarrossel[]>(`${this.base}/vitrine/admin/carrossel?escopo=${encodeURIComponent(escopo)}`)
+    );
+  }
+
+  adicionarImagemCarrossel(escopo: string, imagemUrl: string): Promise<ImagemCarrossel> {
+    return firstValueFrom(
+      this.http.post<ImagemCarrossel>(`${this.base}/vitrine/admin/carrossel`, { escopo, imagem_url: imagemUrl })
+    );
+  }
+
+  excluirImagemCarrossel(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/carrossel/${id}`));
   }
 }

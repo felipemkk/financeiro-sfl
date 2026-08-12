@@ -1,85 +1,29 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { ProdutoVitrine } from '../core/models';
-import { linkWhatsapp } from './vitrine.constants';
 import { VitrineHeaderComponent } from './vitrine-header.component';
 import { VitrineHeroComponent } from './vitrine-hero.component';
 import { VitrineProdutoModalComponent } from './vitrine-produto-modal.component';
 
-const MARCAS = [
-  { nome: 'Chanel', logo: null },
-  { nome: 'Louis Vuitton', logo: 'marcas/louis-vuitton.png' },
-  { nome: 'Gucci', logo: 'marcas/gucci.png' },
-  { nome: 'Prada', logo: 'marcas/prada.png' },
-  { nome: 'Saint Laurent', logo: 'marcas/saint-laurent.png' },
-  { nome: 'Dior', logo: 'marcas/dior.png' },
-  { nome: 'Bottega Veneta', logo: null },
-];
-
-const CATEGORIAS = [
-  { nome: 'Bolsas', clicavel: true },
-  { nome: 'Sapatos', clicavel: true },
-  { nome: 'Acessórios', clicavel: false },
-  { nome: 'Joias', clicavel: false },
-  { nome: 'Óculos', clicavel: false },
-];
-
 @Component({
-  selector: 'app-vitrine',
+  selector: 'app-vitrine-categoria',
   standalone: true,
-  imports: [CommonModule, RouterLink, VitrineHeaderComponent, VitrineHeroComponent, VitrineProdutoModalComponent],
+  imports: [CommonModule, VitrineHeaderComponent, VitrineHeroComponent, VitrineProdutoModalComponent],
   template: `
     <div class="vitrine">
-      <app-vitrine-header></app-vitrine-header>
+      <app-vitrine-header [categoriaAtiva]="categoria"></app-vitrine-header>
 
       <app-vitrine-hero
-        escopo="principal"
-        eyebrow="NOVA COLEÇÃO"
-        titulo="Ícones que
-transcendem
-o tempo"
-        subtitulo="As peças mais desejadas, selecionadas para mulheres extraordinárias."
-        ctaTexto="DESCUBRA AGORA"
-        ctaHref="#destaques"
+        [escopo]="categoria"
+        eyebrow="COLEÇÃO"
+        [titulo]="categoria"
+        subtitulo="Peças selecionadas, prontas para fazer parte da sua história."
       ></app-vitrine-hero>
 
-      <section class="secao-categorias">
-        <p class="rotulo-secao">CATEGORIAS</p>
-        <div class="grid-categorias">
-          @for (c of categorias; track c.nome) {
-            @if (c.clicavel) {
-              <a class="card-categoria clicavel" [routerLink]="['/vitrine/categoria', c.nome]">
-                <div class="card-categoria-imagem"></div>
-                <p class="card-categoria-nome">{{ c.nome | uppercase }}</p>
-                <span class="card-categoria-link">VER MAIS</span>
-              </a>
-            } @else {
-              <div class="card-categoria">
-                <div class="card-categoria-imagem"></div>
-                <p class="card-categoria-nome">{{ c.nome | uppercase }}</p>
-              </div>
-            }
-          }
-        </div>
-      </section>
-
-      <section class="secao-marcas">
-        <p class="rotulo-secao">MARCAS EXCLUSIVAS</p>
-        <div class="carrossel-marcas">
-          @for (marca of marcas; track marca.nome) {
-            @if (marca.logo) {
-              <img class="marca-logo" [src]="marca.logo" [alt]="marca.nome" />
-            } @else {
-              <span class="marca-nome">{{ marca.nome }}</span>
-            }
-          }
-        </div>
-      </section>
-
-      <section class="secao-destaques" id="destaques">
-        <p class="rotulo-secao">DESTAQUES</p>
+      <section class="secao-catalogo">
+        <p class="rotulo-secao">CATÁLOGO</p>
 
         @if (carregando()) {
           <p class="carregando">Carregando…</p>
@@ -90,15 +34,14 @@ o tempo"
         } @else {
           <div class="grid-produtos">
             @for (p of produtos(); track p.id) {
-              <div class="card-produto">
-                <button type="button" class="card-produto-imagem" (click)="produtoSelecionado.set(p)">
+              <button type="button" class="card-produto" (click)="produtoSelecionado.set(p)">
+                <div class="card-produto-imagem">
                   <img [src]="p.imagem_url" [alt]="p.nome" />
-                </button>
+                </div>
                 <p class="card-produto-marca">{{ p.marca | uppercase }}</p>
                 <p class="card-produto-nome">{{ p.nome }}</p>
                 <p class="card-produto-preco">{{ p.preco | currency:'BRL' }}</p>
-                <a class="card-produto-consultar" [href]="linkWhatsappProduto(p)" target="_blank" rel="noopener">Consultar</a>
-              </div>
+              </button>
             }
           </div>
         }
@@ -157,64 +100,11 @@ o tempo"
       color: var(--v-ink-muted);
       margin: 0 0 20px;
     }
-    .secao-categorias, .secao-marcas, .secao-destaques {
+    .secao-catalogo {
       padding: 40px 24px;
       max-width: 1280px;
       margin: 0 auto;
     }
-    .grid-categorias {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 16px;
-    }
-    .card-categoria {
-      position: relative;
-      overflow: hidden;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .card-categoria.clicavel { cursor: pointer; }
-    .card-categoria-imagem {
-      aspect-ratio: 1;
-      background: linear-gradient(160deg, var(--v-bg-alt), var(--v-border));
-      margin-bottom: 10px;
-    }
-    .card-categoria-nome {
-      font-size: 0.8125rem;
-      letter-spacing: 0.05em;
-      margin: 0 0 2px;
-    }
-    .card-categoria-link {
-      font-size: 0.6875rem;
-      text-decoration: underline;
-      color: var(--v-ink-muted);
-    }
-
-    .carrossel-marcas {
-      display: flex;
-      gap: 48px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-    .carrossel-marcas::-webkit-scrollbar { display: none; }
-    .marca-nome {
-      font-family: var(--font-display);
-      font-size: 1.375rem;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-      color: var(--v-ink);
-      flex: 0 0 auto;
-    }
-    .marca-logo {
-      height: 30px;
-      width: auto;
-      max-width: 140px;
-      object-fit: contain;
-      flex: 0 0 auto;
-    }
-
     .carregando, .vazio {
       color: var(--v-ink-muted);
       padding: 40px 0;
@@ -225,21 +115,29 @@ o tempo"
       grid-template-columns: repeat(4, 1fr);
       gap: 24px;
     }
+    .card-produto {
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      color: inherit;
+    }
     .card-produto-imagem {
-      display: block;
-      width: 100%;
       aspect-ratio: 1;
       background: var(--v-bg-alt);
       margin-bottom: 12px;
       overflow: hidden;
-      border: none;
-      padding: 0;
-      cursor: pointer;
     }
     .card-produto-imagem img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.2s ease;
+    }
+    .card-produto:hover .card-produto-imagem img {
+      transform: scale(1.03);
     }
     .card-produto-marca {
       font-size: 0.6875rem;
@@ -254,20 +152,7 @@ o tempo"
     .card-produto-preco {
       font-family: var(--font-display);
       font-size: 1rem;
-      margin: 0 0 10px;
-    }
-    .card-produto-consultar {
-      display: inline-block;
-      border: 1px solid var(--v-preto);
-      color: var(--v-preto);
-      text-decoration: none;
-      font-size: 0.6875rem;
-      letter-spacing: 0.06em;
-      padding: 8px 14px;
-    }
-    .card-produto-consultar:hover {
-      background: var(--v-preto);
-      color: #fff;
+      margin: 0;
     }
 
     .rodape {
@@ -294,33 +179,26 @@ o tempo"
     }
 
     @media (max-width: 900px) {
-      .grid-categorias { grid-template-columns: repeat(3, 1fr); }
       .grid-produtos { grid-template-columns: repeat(2, 1fr); }
       .rodape { grid-template-columns: repeat(2, 1fr); }
     }
   `],
 })
-export class VitrineComponent implements OnInit {
-  categorias = CATEGORIAS;
-  marcas = MARCAS;
-
+export class VitrineCategoriaComponent implements OnInit {
+  categoria = '';
   produtos = signal<ProdutoVitrine[]>([]);
   carregando = signal(true);
   produtoSelecionado = signal<ProdutoVitrine | null>(null);
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute) {}
 
   async ngOnInit(): Promise<void> {
+    this.categoria = this.route.snapshot.paramMap.get('categoria') ?? '';
     this.carregando.set(true);
     try {
-      this.produtos.set(await this.api.listarProdutosVitrine({ destaque: true }));
+      this.produtos.set(await this.api.listarProdutosVitrine({ categoria: this.categoria }));
     } finally {
       this.carregando.set(false);
     }
-  }
-
-  linkWhatsappProduto(p: ProdutoVitrine): string {
-    const mensagem = `Olá! Tenho interesse em ${p.nome}${p.marca ? ' (' + p.marca + ')' : ''}, no valor de ${p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Ainda está disponível?`;
-    return linkWhatsapp(mensagem);
   }
 }
