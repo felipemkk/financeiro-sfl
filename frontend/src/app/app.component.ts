@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from './core/auth.service';
 
@@ -9,7 +10,7 @@ import { AuthService } from './core/auth.service';
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, MatIconModule],
   template: `
-    @if (auth.logado()) {
+    @if (mostrarShell()) {
       <header class="topbar">
         <span class="brand">Financeiro <em>SFL</em></span>
         <button class="sair" (click)="auth.logout()" aria-label="Sair">
@@ -23,7 +24,7 @@ import { AuthService } from './core/auth.service';
       <router-outlet></router-outlet>
     </main>
 
-    @if (auth.logado()) {
+    @if (mostrarShell()) {
       <nav class="bottom-nav">
         <a routerLink="/home" routerLinkActive="active" class="nav-item">
           <mat-icon>home</mat-icon>
@@ -138,5 +139,20 @@ import { AuthService } from './core/auth.service';
   `],
 })
 export class AppComponent {
-  constructor(public auth: AuthService, private router: Router) {}
+  private urlAtual = signal('');
+
+  constructor(public auth: AuthService, private router: Router) {
+    this.urlAtual.set(this.router.url);
+    this.router.events
+      .pipe(filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd))
+      .subscribe((evento) => this.urlAtual.set(evento.urlAfterRedirects));
+  }
+
+  // A vitrine pública (/vitrine) é uma página separada, sem o shell do app —
+  // mesmo quando quem está navegando está logada. A área de gestão
+  // (/vitrine/gerenciar) continua usando o shell normal.
+  mostrarShell(): boolean {
+    const caminho = this.urlAtual().split('?')[0];
+    return this.auth.logado() && caminho !== '/vitrine';
+  }
 }
