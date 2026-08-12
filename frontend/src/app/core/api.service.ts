@@ -150,6 +150,10 @@ export class ApiService {
     return firstValueFrom(this.http.post<void>(`${this.base}/casa/lancamentos/${id}/despagar`, {}));
   }
 
+  suspenderLancamentoCasa(id: number): Promise<LancamentoCasa> {
+    return firstValueFrom(this.http.post<LancamentoCasa>(`${this.base}/casa/lancamentos/${id}/suspender`, {}));
+  }
+
   excluirLancamentoCasa(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/casa/lancamentos/${id}`));
   }

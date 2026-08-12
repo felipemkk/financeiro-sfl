@@ -26,6 +26,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Put("/lancamentos/{id}", h.atualizarLancamento)
 	r.Post("/lancamentos/{id}/pagar", h.pagar)
 	r.Post("/lancamentos/{id}/despagar", h.despagar)
+	r.Post("/lancamentos/{id}/suspender", h.suspender)
 	r.Delete("/lancamentos/{id}", h.excluirLancamento)
 	r.Get("/recorrentes", h.listarRecorrentes)
 	r.Post("/recorrentes/{id}/desativar", h.desativarRecorrente)
@@ -534,6 +535,74 @@ func (h *Handler) despagar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// suspender empurra um lançamento para a competência do mês seguinte,
+// mantendo o mesmo dia de vencimento (se houver).
+func (h *Handler) suspender(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	var ano, mes int
+	var venc *time.Time
+	var recorrenteID *int
+	err = h.pool.QueryRow(ctx,
+		`SELECT competencia_ano, competencia_mes, data_vencimento, recorrente_id FROM casa_lancamentos WHERE id = $1`, id,
+	).Scan(&ano, &mes, &venc, &recorrenteID)
+	if err != nil {
+		http.Error(w, "lançamento não encontrado", http.StatusNotFound)
+		return
+	}
+
+	proximo := construirData(ano, mes+1, 1)
+	novoAno := proximo.Year()
+	novoMes := int(proximo.Month())
+
+	if recorrenteID != nil {
+		var jaExiste bool
+		err = h.pool.QueryRow(ctx,
+			`SELECT EXISTS(SELECT 1 FROM casa_lancamentos WHERE recorrente_id = $1 AND competencia_ano = $2 AND competencia_mes = $3 AND id <> $4)`,
+			*recorrenteID, novoAno, novoMes, id,
+		).Scan(&jaExiste)
+		if err != nil {
+			http.Error(w, "erro ao verificar mês seguinte", http.StatusInternalServerError)
+			return
+		}
+		if jaExiste {
+			http.Error(w, "o mês seguinte já tem um lançamento dessa recorrência — edite-o diretamente por lá", http.StatusConflict)
+			return
+		}
+	}
+
+	var novaData *time.Time
+	if venc != nil {
+		d := construirData(novoAno, novoMes, venc.Day())
+		novaData = &d
+	}
+
+	tag, err := h.pool.Exec(ctx,
+		`UPDATE casa_lancamentos SET competencia_ano = $1, competencia_mes = $2, data_vencimento = $3 WHERE id = $4`,
+		novoAno, novoMes, novaData, id)
+	if err != nil {
+		http.Error(w, "erro ao suspender lançamento", http.StatusInternalServerError)
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		http.Error(w, "lançamento não encontrado", http.StatusNotFound)
+		return
+	}
+
+	l, err := h.carregarLancamento(ctx, id)
+	if err != nil {
+		http.Error(w, "erro ao carregar lançamento atualizado", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(l)
 }
 
 func (h *Handler) excluirLancamento(w http.ResponseWriter, r *http.Request) {
