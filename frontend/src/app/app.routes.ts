@@ -47,5 +47,34 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./vendas/venda-detalhe.component').then((m) => m.VendaDetalheComponent),
   },
+  {
+    path: 'casa',
+    canActivate: [authGuard],
+    data: { tipo: 'despesa' },
+    loadComponent: () =>
+      import('./casa/casa-lancamentos.component').then((m) => m.CasaLancamentosComponent),
+  },
+  {
+    path: 'casa/receitas',
+    canActivate: [authGuard],
+    data: { tipo: 'receita' },
+    loadComponent: () =>
+      import('./casa/casa-lancamentos.component').then((m) => m.CasaLancamentosComponent),
+  },
+  {
+    path: 'casa/resumo',
+    canActivate: [authGuard],
+    loadComponent: () => import('./casa/casa-resumo.component').then((m) => m.CasaResumoComponent),
+  },
+  {
+    path: 'casa/novo',
+    canActivate: [authGuard],
+    loadComponent: () => import('./casa/casa-form.component').then((m) => m.CasaFormComponent),
+  },
+  {
+    path: 'casa/lancamentos/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./casa/casa-form.component').then((m) => m.CasaFormComponent),
+  },
   { path: '**', redirectTo: 'home' },
 ];

@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
 import { DashboardResumo } from '../core/models';
@@ -8,7 +9,7 @@ import { DashboardResumo } from '../core/models';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
   template: `
     <div class="page">
       <p class="section-label">Resumo do mês</p>
@@ -43,6 +44,15 @@ import { DashboardResumo } from '../core/models';
           </div>
         </div>
       }
+
+      <a class="card casa-link" routerLink="/casa">
+        <mat-icon>savings</mat-icon>
+        <div class="casa-texto">
+          <p class="casa-titulo">Gastos da Casa</p>
+          <p class="casa-sub">Contas, salários e orçamento doméstico</p>
+        </div>
+        <mat-icon class="casa-seta">chevron_right</mat-icon>
+      </a>
     </div>
   `,
   styles: [`
@@ -94,6 +104,34 @@ import { DashboardResumo } from '../core/models';
     }
     .stat.critical .stat-value { color: var(--critical-ink); }
     .stat.accent .stat-value { color: var(--accent-ink); }
+    .casa-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .casa-link mat-icon:first-child {
+      color: var(--brass);
+      flex: 0 0 auto;
+    }
+    .casa-texto { flex: 1; min-width: 0; }
+    .casa-titulo {
+      margin: 0 0 2px;
+      font-family: var(--font-display);
+      font-size: 0.9375rem;
+      color: var(--ink);
+    }
+    .casa-sub {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+    }
+    .casa-seta {
+      color: var(--ink-faint);
+      flex: 0 0 auto;
+    }
   `],
 })
 export class HomeComponent implements OnInit {

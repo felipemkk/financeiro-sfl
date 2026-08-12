@@ -58,3 +58,39 @@ export interface DashboardResumo {
   vendas_mes_qtd: number;
   vendas_mes_total: number;
 }
+
+export type TipoLancamentoCasa = 'despesa' | 'receita';
+export type TipoRecorrencia = 'fixa' | 'variavel' | 'pontual';
+
+export interface LancamentoCasa {
+  id: number;
+  tipo: TipoLancamentoCasa;
+  recorrente_id: number | null;
+  tipo_recorrencia: TipoRecorrencia;
+  categoria: string;
+  descricao: string;
+  valor_previsto: number;
+  valor_realizado: number;
+  data_vencimento: string | null;
+  status: 'pendente' | 'paga' | 'atrasada';
+  observacoes: string;
+  competencia_ano: number;
+  competencia_mes: number;
+}
+
+export interface CategoriaResumoCasa {
+  categoria: string;
+  previsto: number;
+  realizado: number;
+  percentual: number;
+}
+
+export interface ResumoCasa {
+  receitas_previsto: number;
+  receitas_realizado: number;
+  despesas_previsto: number;
+  despesas_realizado: number;
+  saldo_previsto: number;
+  saldo_realizado: number;
+  por_categoria: CategoriaResumoCasa[];
+}

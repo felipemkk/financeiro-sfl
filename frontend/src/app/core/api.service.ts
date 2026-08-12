@@ -2,7 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Cliente, DashboardResumo, ParcelaDoMes, TipoVenda, Venda } from './models';
+import {
+  Cliente,
+  DashboardResumo,
+  LancamentoCasa,
+  ParcelaDoMes,
+  ResumoCasa,
+  TipoLancamentoCasa,
+  TipoRecorrencia,
+  TipoVenda,
+  Venda,
+} from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -90,5 +100,64 @@ export class ApiService {
 
   obterDashboard(): Promise<DashboardResumo> {
     return firstValueFrom(this.http.get<DashboardResumo>(`${this.base}/dashboard`));
+  }
+
+  listarLancamentosCasa(ano: number, mes: number, tipo?: TipoLancamentoCasa): Promise<LancamentoCasa[]> {
+    const tipoParam = tipo ? `&tipo=${tipo}` : '';
+    return firstValueFrom(
+      this.http.get<LancamentoCasa[]>(`${this.base}/casa/lancamentos?ano=${ano}&mes=${mes}${tipoParam}`)
+    );
+  }
+
+  obterLancamentoCasa(id: number): Promise<LancamentoCasa> {
+    return firstValueFrom(this.http.get<LancamentoCasa>(`${this.base}/casa/lancamentos/${id}`));
+  }
+
+  criarLancamentoCasa(lancamento: {
+    tipo: TipoLancamentoCasa;
+    tipo_recorrencia?: TipoRecorrencia;
+    categoria: string;
+    descricao: string;
+    valor_previsto: number;
+    data_vencimento?: string;
+    observacoes?: string;
+    competencia_ano: number;
+    competencia_mes: number;
+  }): Promise<LancamentoCasa> {
+    return firstValueFrom(this.http.post<LancamentoCasa>(`${this.base}/casa/lancamentos`, lancamento));
+  }
+
+  atualizarLancamentoCasa(
+    id: number,
+    lancamento: {
+      categoria: string;
+      descricao: string;
+      valor_previsto: number;
+      data_vencimento?: string;
+      observacoes?: string;
+    }
+  ): Promise<LancamentoCasa> {
+    return firstValueFrom(this.http.put<LancamentoCasa>(`${this.base}/casa/lancamentos/${id}`, lancamento));
+  }
+
+  pagarLancamentoCasa(id: number, valorRealizado?: number): Promise<LancamentoCasa> {
+    const body = valorRealizado !== undefined ? { valor_realizado: valorRealizado } : {};
+    return firstValueFrom(this.http.post<LancamentoCasa>(`${this.base}/casa/lancamentos/${id}/pagar`, body));
+  }
+
+  despagarLancamentoCasa(id: number): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/casa/lancamentos/${id}/despagar`, {}));
+  }
+
+  excluirLancamentoCasa(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.base}/casa/lancamentos/${id}`));
+  }
+
+  listarCategoriasCasa(): Promise<string[]> {
+    return firstValueFrom(this.http.get<string[]>(`${this.base}/casa/categorias`));
+  }
+
+  obterResumoCasa(ano: number, mes: number): Promise<ResumoCasa> {
+    return firstValueFrom(this.http.get<ResumoCasa>(`${this.base}/casa/resumo?ano=${ano}&mes=${mes}`));
   }
 }

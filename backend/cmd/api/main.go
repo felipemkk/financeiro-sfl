@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"financeiro-sfl/backend/internal/auth"
+	"financeiro-sfl/backend/internal/casa"
 	"financeiro-sfl/backend/internal/cliente"
 	"financeiro-sfl/backend/internal/dashboard"
 	"financeiro-sfl/backend/internal/db"
@@ -55,6 +56,7 @@ func main() {
 	vendaHandler := venda.NewHandler(pool)
 	parcelaHandler := parcela.NewHandler(pool)
 	dashboardHandler := dashboard.NewHandler(pool)
+	casaHandler := casa.NewHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -78,6 +80,7 @@ func main() {
 		r.Route("/vendas", vendaHandler.Routes)
 		r.Route("/parcelas", parcelaHandler.Routes)
 		r.Route("/dashboard", dashboardHandler.Routes)
+		r.Route("/casa", casaHandler.Routes)
 	})
 
 	log.Printf("servidor rodando na porta %s", port)
