@@ -46,7 +46,7 @@ import { ParcelaDoMes } from '../core/models';
                 {{ statusLabel(p.status) }}
               </span>
             </div>
-            <p class="desc">Venda #{{ p.venda_id }} — {{ p.descricao_produto }} — parcela {{ p.numero }}/{{ p.num_parcelas }}</p>
+            <p class="desc">{{ p.tipo === 'emprestimo' ? 'Empréstimo' : 'Venda' }} #{{ p.venda_id }} — {{ p.descricao_produto }} — parcela {{ p.numero }}/{{ p.num_parcelas }}</p>
             <div class="card-bottom">
               <span class="amt valor">{{ p.valor | currency:'BRL' }}</span>
               <span class="due">vence {{ p.vencimento | date:'dd/MM' }}</span>

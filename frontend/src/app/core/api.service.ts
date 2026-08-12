@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Cliente, DashboardResumo, ParcelaDoMes, Venda } from './models';
+import { Cliente, DashboardResumo, ParcelaDoMes, TipoVenda, Venda } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -37,6 +37,7 @@ export class ApiService {
 
   criarVenda(venda: {
     cliente_id: number;
+    tipo: TipoVenda;
     descricao_produto: string;
     valor_total: number;
     valor_investido: number;

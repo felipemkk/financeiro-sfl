@@ -81,7 +81,7 @@ func (h *Handler) listByMonth(w http.ResponseWriter, r *http.Request) {
 		var p parcelaDoMes
 		var venc time.Time
 		if err := rows.Scan(&p.ID, &p.VendaID, &p.ClienteID, &p.ClienteNome, &p.ClienteTelefone,
-			&p.DescricaoProduto, &p.Numero, &p.NumParcelas, &p.Valor, &venc, &p.Status); err != nil {
+			&p.Tipo, &p.DescricaoProduto, &p.Numero, &p.NumParcelas, &p.Valor, &venc, &p.Status); err != nil {
 			http.Error(w, "erro ao ler parcelas", http.StatusInternalServerError)
 			return
 		}

@@ -15,9 +15,12 @@ export interface Parcela {
   status: 'pendente' | 'paga' | 'atrasada';
 }
 
+export type TipoVenda = 'produto' | 'emprestimo';
+
 export interface Venda {
   id: number;
   cliente_id: number;
+  tipo: TipoVenda;
   descricao_produto: string;
   valor_total: number;
   valor_investido: number;
@@ -33,6 +36,7 @@ export interface ParcelaDoMes {
   cliente_id: number;
   cliente_nome: string;
   cliente_telefone: string;
+  tipo: TipoVenda;
   descricao_produto: string;
   numero: number;
   num_parcelas: number;

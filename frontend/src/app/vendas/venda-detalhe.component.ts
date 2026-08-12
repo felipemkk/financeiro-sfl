@@ -26,7 +26,7 @@ import { Parcela, Venda } from '../core/models';
         <div class="centro"><mat-spinner diameter="32"></mat-spinner></div>
       } @else if (venda()) {
         @let v = venda()!;
-        <p class="sale-num amt">Venda Nº {{ v.id }}</p>
+        <p class="sale-num amt">{{ v.tipo === 'emprestimo' ? 'Empréstimo' : 'Venda' }} Nº {{ v.id }}</p>
         <h1>{{ v.descricao_produto }}</h1>
         <p class="subtitulo">
           {{ v.valor_total | currency:'BRL' }} em {{ v.num_parcelas }}x — início {{ v.data_primeira_parcela | date:'dd/MM/yyyy' }}
@@ -50,7 +50,7 @@ import { Parcela, Venda } from '../core/models';
           </div>
         } @else {
           <div class="lucro" [class.negativo]="v.lucro < 0">
-            <span>Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}</span>
+            <span>{{ v.tipo === 'emprestimo' ? 'Emprestado' : 'Investido' }}: {{ v.valor_investido | currency:'BRL' }} — {{ v.tipo === 'emprestimo' ? 'Juros' : 'Lucro' }}: {{ v.lucro | currency:'BRL' }}</span>
             <button class="btn btn-icon editar-btn" (click)="iniciarEdicaoInvestido(v)" aria-label="Editar valor investido">
               <mat-icon>edit</mat-icon>
             </button>

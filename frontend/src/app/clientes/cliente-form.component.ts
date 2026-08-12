@@ -134,12 +134,15 @@ import { Cliente, Venda } from '../core/models';
           @for (v of vendas(); track v.id) {
             <div class="card sale-card" [class.quitada]="!temPendencia(v)">
               <div class="sale-top">
-                <span class="sale-title">{{ v.descricao_produto }}</span>
+                <span class="sale-title">
+                  @if (v.tipo === 'emprestimo') { <span class="pill pill-pendente">Empréstimo</span> }
+                  {{ v.descricao_produto }}
+                </span>
                 <span class="sale-num amt">Nº {{ v.id }}</span>
               </div>
               <p class="sale-meta">{{ v.valor_total | currency:'BRL' }} em {{ v.num_parcelas }}x — início {{ v.data_primeira_parcela | date:'dd/MM/yyyy' }}</p>
               <p class="lucro" [class.negativo]="v.lucro < 0">
-                Investido: {{ v.valor_investido | currency:'BRL' }} — Lucro: {{ v.lucro | currency:'BRL' }}
+                {{ v.tipo === 'emprestimo' ? 'Emprestado' : 'Investido' }}: {{ v.valor_investido | currency:'BRL' }} — {{ v.tipo === 'emprestimo' ? 'Juros' : 'Lucro' }}: {{ v.lucro | currency:'BRL' }}
               </p>
               <div class="installments">
                 @for (p of v.parcelas; track p.id) {
@@ -264,7 +267,7 @@ import { Cliente, Venda } from '../core/models';
     .sale-card { margin-bottom: 12px; }
     .sale-card.quitada { background: var(--accent-weak); border-color: transparent; }
     .sale-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
-    .sale-title { font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+    .sale-title { display: flex; align-items: center; gap: 6px; font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
     .sale-num { color: var(--brass); font-size: 0.875rem; }
     .sale-meta { font-size: 0.8125rem; color: var(--ink-muted); margin: 0 0 8px; }
     .lucro {

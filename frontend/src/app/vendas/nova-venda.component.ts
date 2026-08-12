@@ -9,7 +9,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../core/api.service';
-import { Cliente } from '../core/models';
+import { Cliente, TipoVenda } from '../core/models';
 
 @Component({
   selector: 'app-nova-venda',
@@ -28,6 +28,15 @@ import { Cliente } from '../core/models';
     <div class="page">
       <p class="section-label">Nova venda parcelada</p>
 
+      <div class="tipo-toggle">
+        <button type="button" class="btn" [class.btn-primary]="tipo() === 'produto'" (click)="tipo.set('produto')">
+          Produto
+        </button>
+        <button type="button" class="btn" [class.btn-primary]="tipo() === 'emprestimo'" (click)="tipo.set('emprestimo')">
+          Empréstimo
+        </button>
+      </div>
+
       <form (ngSubmit)="salvar()">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Cliente</mat-label>
@@ -39,19 +48,36 @@ import { Cliente } from '../core/models';
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Produto</mat-label>
-          <input matInput name="produto" [(ngModel)]="descricaoProduto" required placeholder="Ex: Bolsa" />
+          <mat-label>{{ tipo() === 'emprestimo' ? 'Motivo do empréstimo' : 'Produto' }}</mat-label>
+          <input matInput name="produto" [(ngModel)]="descricaoProduto" required
+                 [placeholder]="tipo() === 'emprestimo' ? 'Ex: Empréstimo pessoal' : 'Ex: Bolsa'" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Valor total (R$)</mat-label>
-          <input matInput type="number" min="0.01" step="0.01" name="valor" [(ngModel)]="valorTotal" required />
-        </mat-form-field>
+        @if (tipo() === 'produto') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor total (R$)</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valor" [(ngModel)]="valorTotal" required />
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Valor investido (R$)</mat-label>
-          <input matInput type="number" min="0" step="0.01" name="valorInvestido" [(ngModel)]="valorInvestido" />
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor investido (R$)</mat-label>
+            <input matInput type="number" min="0" step="0.01" name="valorInvestido" [(ngModel)]="valorInvestido" />
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor emprestado (R$)</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valorInvestido" [(ngModel)]="valorInvestido" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Taxa de juros (%)</mat-label>
+            <input matInput type="number" min="0" step="0.01" name="taxaJuros" [(ngModel)]="taxaJuros" required />
+          </mat-form-field>
+
+          @if (valorInvestido && taxaJuros !== null) {
+            <p class="preview">Total a receber: <span class="amt">{{ valorTotalCalculado() | currency:'BRL' }}</span></p>
+          }
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Número de parcelas</mat-label>
@@ -65,13 +91,13 @@ import { Cliente } from '../core/models';
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
 
-        @if (valorTotal && numParcelas) {
-          <p class="preview">{{ numParcelas }}x de {{ (valorTotal / numParcelas) | currency:'BRL' }}</p>
+        @if (valorTotalEfetivo() && numParcelas) {
+          <p class="preview">{{ numParcelas }}x de {{ (valorTotalEfetivo() / numParcelas) | currency:'BRL' }}</p>
         }
 
-        @if (valorTotal) {
+        @if (valorTotalEfetivo()) {
           <p class="lucro-tag" [class.negativo]="lucro() < 0">
-            Lucro: <span class="amt">{{ lucro() | currency:'BRL' }}</span>
+            {{ tipo() === 'emprestimo' ? 'Juros' : 'Lucro' }}: <span class="amt">{{ lucro() | currency:'BRL' }}</span>
           </p>
         }
 
@@ -83,7 +109,7 @@ import { Cliente } from '../core/models';
           @if (salvando()) {
             <mat-spinner diameter="18"></mat-spinner>
           } @else {
-            Registrar venda
+            Registrar {{ tipo() === 'emprestimo' ? 'empréstimo' : 'venda' }}
           }
         </button>
       </form>
@@ -95,6 +121,14 @@ import { Cliente } from '../core/models';
       padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
+    }
+    .tipo-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tipo-toggle .btn {
+      flex: 1;
     }
     .full-width {
       width: 100%;
@@ -129,10 +163,12 @@ import { Cliente } from '../core/models';
 })
 export class NovaVendaComponent implements OnInit {
   clientes = signal<Cliente[]>([]);
+  tipo = signal<TipoVenda>('produto');
   clienteId: number | null = null;
   descricaoProduto = '';
   valorTotal: number | null = null;
   valorInvestido: number | null = null;
+  taxaJuros: number | null = null;
   numParcelas: number | null = null;
   dataPrimeiraParcela: Date | null = null;
   salvando = signal(false);
@@ -148,13 +184,26 @@ export class NovaVendaComponent implements OnInit {
     }
   }
 
+  valorTotalCalculado(): number {
+    return (this.valorInvestido ?? 0) * (1 + (this.taxaJuros ?? 0) / 100);
+  }
+
+  valorTotalEfetivo(): number {
+    return this.tipo() === 'emprestimo' ? this.valorTotalCalculado() : (this.valorTotal ?? 0);
+  }
+
   lucro(): number {
-    return (this.valorTotal ?? 0) - (this.valorInvestido ?? 0);
+    return this.valorTotalEfetivo() - (this.valorInvestido ?? 0);
   }
 
   async salvar(): Promise<void> {
     this.erro.set('');
-    if (!this.clienteId || !this.descricaoProduto || !this.valorTotal || !this.numParcelas || !this.dataPrimeiraParcela) {
+    const valorTotalEfetivo = this.valorTotalEfetivo();
+    if (!this.clienteId || !this.descricaoProduto || !valorTotalEfetivo || !this.numParcelas || !this.dataPrimeiraParcela) {
+      this.erro.set('Preencha todos os campos.');
+      return;
+    }
+    if (this.tipo() === 'emprestimo' && (!this.valorInvestido || this.taxaJuros === null)) {
       this.erro.set('Preencha todos os campos.');
       return;
     }
@@ -163,15 +212,16 @@ export class NovaVendaComponent implements OnInit {
     try {
       await this.api.criarVenda({
         cliente_id: this.clienteId,
+        tipo: this.tipo(),
         descricao_produto: this.descricaoProduto,
-        valor_total: this.valorTotal,
+        valor_total: valorTotalEfetivo,
         valor_investido: this.valorInvestido ?? 0,
         num_parcelas: this.numParcelas,
         data_primeira_parcela: this.formatarData(this.dataPrimeiraParcela),
       });
       this.router.navigate(['/cobranca']);
     } catch {
-      this.erro.set('Não foi possível registrar a venda.');
+      this.erro.set(`Não foi possível registrar ${this.tipo() === 'emprestimo' ? 'o empréstimo' : 'a venda'}.`);
     } finally {
       this.salvando.set(false);
     }
