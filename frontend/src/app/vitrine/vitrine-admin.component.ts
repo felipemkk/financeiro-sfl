@@ -39,6 +39,14 @@ const CATEGORIAS = ['Bolsas', 'Sapatos', 'Acessórios', 'Joias', 'Óculos'];
               </div>
               <mat-icon class="seta">chevron_right</mat-icon>
             </a>
+            <a class="card secao-link" [routerLink]="['/vitrine/gerenciar/capa', cat]">
+              <mat-icon>image</mat-icon>
+              <div class="secao-texto">
+                <p class="secao-titulo">Foto de capa</p>
+                <p class="secao-sub">Imagem do quadrado de {{ cat }} na página inicial</p>
+              </div>
+              <mat-icon class="seta">chevron_right</mat-icon>
+            </a>
             <a class="card secao-link" [routerLink]="['/vitrine/gerenciar/catalogo', cat]">
               <mat-icon>grid_view</mat-icon>
               <div class="secao-texto">

@@ -51,13 +51,13 @@ o tempo"
           @for (c of categorias; track c.nome) {
             @if (c.clicavel) {
               <a class="card-categoria clicavel" [routerLink]="['/vitrine/categoria', c.nome]">
-                <div class="card-categoria-imagem"></div>
+                <div class="card-categoria-imagem" [style.backgroundImage]="capaEstilo(c.nome)"></div>
                 <p class="card-categoria-nome">{{ c.nome | uppercase }}</p>
                 <span class="card-categoria-link">VER MAIS</span>
               </a>
             } @else {
               <div class="card-categoria">
-                <div class="card-categoria-imagem"></div>
+                <div class="card-categoria-imagem" [style.backgroundImage]="capaEstilo(c.nome)"></div>
                 <p class="card-categoria-nome">{{ c.nome | uppercase }}</p>
               </div>
             }
@@ -181,7 +181,10 @@ o tempo"
     .card-categoria.clicavel { cursor: pointer; }
     .card-categoria-imagem {
       aspect-ratio: 1;
-      background: linear-gradient(160deg, var(--v-bg-alt), var(--v-border));
+      background-color: var(--v-bg-alt);
+      background-image: linear-gradient(160deg, var(--v-bg-alt), var(--v-border));
+      background-size: cover;
+      background-position: center;
       margin-bottom: 10px;
     }
     .card-categoria-nome {
@@ -312,13 +315,19 @@ export class VitrineComponent implements OnInit {
   produtos = signal<ProdutoVitrine[]>([]);
   carregando = signal(true);
   produtoSelecionado = signal<ProdutoVitrine | null>(null);
+  capas = signal<Record<string, string>>({});
 
   constructor(private api: ApiService) {}
 
   async ngOnInit(): Promise<void> {
     this.carregando.set(true);
     try {
-      this.produtos.set(await this.api.listarProdutosVitrine({ destaque: true }));
+      const [produtos, capas] = await Promise.all([
+        this.api.listarProdutosVitrine({ destaque: true }),
+        this.api.listarCapasCategorias(),
+      ]);
+      this.produtos.set(produtos);
+      this.capas.set(Object.fromEntries(capas.map((c) => [c.categoria, c.imagem_url])));
     } finally {
       this.carregando.set(false);
     }
@@ -326,5 +335,10 @@ export class VitrineComponent implements OnInit {
 
   linkWhatsappProduto(p: ProdutoVitrine): string {
     return gerarLinkWhatsappProduto(p);
+  }
+
+  capaEstilo(categoria: string): string {
+    const url = this.capas()[categoria];
+    return url ? `url("${url}")` : '';
   }
 }

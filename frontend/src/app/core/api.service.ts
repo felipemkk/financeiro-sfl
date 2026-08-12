@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
+  CapaCategoria,
   Cliente,
   DashboardResumo,
   ImagemCarrossel,
@@ -233,5 +234,24 @@ export class ApiService {
 
   excluirImagemCarrossel(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/vitrine/admin/carrossel/${id}`));
+  }
+
+  listarCapasCategorias(): Promise<CapaCategoria[]> {
+    return firstValueFrom(this.http.get<CapaCategoria[]>(`${this.base}/vitrine/categorias/capas`));
+  }
+
+  definirCapaCategoria(categoria: string, imagemUrl: string): Promise<CapaCategoria> {
+    return firstValueFrom(
+      this.http.put<CapaCategoria>(
+        `${this.base}/vitrine/admin/categorias/${encodeURIComponent(categoria)}/capa`,
+        { imagem_url: imagemUrl }
+      )
+    );
+  }
+
+  excluirCapaCategoria(categoria: string): Promise<void> {
+    return firstValueFrom(
+      this.http.delete<void>(`${this.base}/vitrine/admin/categorias/${encodeURIComponent(categoria)}/capa`)
+    );
   }
 }

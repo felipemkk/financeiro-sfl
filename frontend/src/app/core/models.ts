@@ -103,6 +103,11 @@ export interface ImagemCarrossel {
   imagem_url: string;
 }
 
+export interface CapaCategoria {
+  categoria: string;
+  imagem_url: string;
+}
+
 export interface ProdutoVitrine {
   id: number;
   categoria: string;

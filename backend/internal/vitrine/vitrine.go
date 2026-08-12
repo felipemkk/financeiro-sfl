@@ -22,6 +22,7 @@ func NewHandler(pool *pgxpool.Pool) *Handler {
 func (h *Handler) PublicRoutes(r chi.Router) {
 	r.Get("/produtos", h.listarPublico)
 	r.Get("/carrossel", h.listarCarrosselPublico)
+	r.Get("/categorias/capas", h.listarCapasCategorias)
 }
 
 // AdminRoutes é montado dentro do grupo protegido por JWT.
@@ -35,6 +36,9 @@ func (h *Handler) AdminRoutes(r chi.Router) {
 	r.Get("/carrossel", h.listarCarrosselAdmin)
 	r.Post("/carrossel", h.adicionarCarrossel)
 	r.Delete("/carrossel/{id}", h.excluirCarrossel)
+	r.Get("/categorias/capas", h.listarCapasCategorias)
+	r.Put("/categorias/{categoria}/capa", h.definirCapaCategoria)
+	r.Delete("/categorias/{categoria}/capa", h.excluirCapaCategoria)
 }
 
 type produtoResponse struct {
@@ -359,6 +363,77 @@ func (h *Handler) excluirCarrossel(w http.ResponseWriter, r *http.Request) {
 	}
 	if tag.RowsAffected() == 0 {
 		http.Error(w, "imagem não encontrada", http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type capaCategoria struct {
+	Categoria string `json:"categoria"`
+	ImagemURL string `json:"imagem_url"`
+}
+
+func (h *Handler) listarCapasCategorias(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.pool.Query(r.Context(), `SELECT categoria, imagem_url FROM vitrine_categoria_capa`)
+	if err != nil {
+		http.Error(w, "erro ao buscar capas", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	capas := []capaCategoria{}
+	for rows.Next() {
+		var c capaCategoria
+		if err := rows.Scan(&c.Categoria, &c.ImagemURL); err != nil {
+			http.Error(w, "erro ao ler capas", http.StatusInternalServerError)
+			return
+		}
+		capas = append(capas, c)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(capas)
+}
+
+type capaCategoriaRequest struct {
+	ImagemURL string `json:"imagem_url"`
+}
+
+func (h *Handler) definirCapaCategoria(w http.ResponseWriter, r *http.Request) {
+	categoria := chi.URLParam(r, "categoria")
+	var req capaCategoriaRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "corpo inválido", http.StatusBadRequest)
+		return
+	}
+	if req.ImagemURL == "" {
+		http.Error(w, "dados obrigatórios: imagem_url", http.StatusBadRequest)
+		return
+	}
+
+	_, err := h.pool.Exec(r.Context(),
+		`INSERT INTO vitrine_categoria_capa (categoria, imagem_url, atualizado_em)
+		 VALUES ($1, $2, now())
+		 ON CONFLICT (categoria) DO UPDATE SET imagem_url = $2, atualizado_em = now()`,
+		categoria, req.ImagemURL)
+	if err != nil {
+		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(capaCategoria{Categoria: categoria, ImagemURL: req.ImagemURL})
+}
+
+func (h *Handler) excluirCapaCategoria(w http.ResponseWriter, r *http.Request) {
+	categoria := chi.URLParam(r, "categoria")
+	tag, err := h.pool.Exec(r.Context(), `DELETE FROM vitrine_categoria_capa WHERE categoria = $1`, categoria)
+	if err != nil {
+		http.Error(w, "erro ao excluir capa", http.StatusInternalServerError)
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		http.Error(w, "capa não encontrada", http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
