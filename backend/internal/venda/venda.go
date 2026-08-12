@@ -98,6 +98,17 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var clienteNome string
+	if err := tx.QueryRow(ctx, `SELECT nome FROM clientes WHERE id = $1`, req.ClienteID).Scan(&clienteNome); err != nil {
+		http.Error(w, "erro ao buscar cliente", http.StatusInternalServerError)
+		return
+	}
+	categoriaCasa := "Vendas"
+	if req.Tipo == "emprestimo" {
+		categoriaCasa = "Empréstimos recebidos"
+	}
+	descricaoCasa := clienteNome + " — " + req.DescricaoProduto
+
 	parcelasGeradas := GerarParcelas(req.ValorTotal, req.NumParcelas, dataInicio)
 	parcelas := make([]parcelaResponse, 0, len(parcelasGeradas))
 	for _, p := range parcelasGeradas {
@@ -119,6 +130,18 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 			Vencimento: p.Vencimento.Format("2006-01-02"),
 			Status:     "pendente",
 		})
+
+		// Toda parcela de venda vira uma receita prevista em Gastos da Casa,
+		// já que o dinheiro recebido dela entra no caixa da casa.
+		_, err = tx.Exec(ctx,
+			`INSERT INTO casa_lancamentos (tipo, categoria, descricao, valor_previsto, data_vencimento, competencia_ano, competencia_mes, venda_parcela_id)
+			 VALUES ('receita', $1, $2, $3, $4, $5, $6, $7)`,
+			categoriaCasa, descricaoCasa, p.Valor, p.Vencimento, p.Vencimento.Year(), int(p.Vencimento.Month()), parcelaID,
+		)
+		if err != nil {
+			http.Error(w, "erro ao gerar receita em Gastos da Casa", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -227,6 +250,14 @@ func (h *Handler) quitar(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "venda não encontrada", http.StatusNotFound)
 			return
 		}
+	}
+
+	if _, err := h.pool.Exec(ctx,
+		`UPDATE casa_lancamentos SET status = 'paga', valor_realizado = valor_previsto, data_pagamento = now()
+		 WHERE venda_parcela_id IN (SELECT id FROM parcelas WHERE venda_id = $1) AND status <> 'paga'`, id,
+	); err != nil {
+		http.Error(w, "erro ao atualizar receita em Gastos da Casa", http.StatusInternalServerError)
+		return
 	}
 
 	v, err := h.carregarVenda(r, id)

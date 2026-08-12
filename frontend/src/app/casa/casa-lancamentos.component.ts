@@ -51,8 +51,12 @@ import { CasaNavComponent } from './casa-nav.component';
             </div>
             <p class="desc">
               {{ l.descricao }}
-              @if (l.tipo_recorrencia !== 'pontual') {
-                <span class="tag-recorrente">{{ l.tipo_recorrencia === 'fixa' ? 'recorrente fixa' : 'recorrente variável' }}</span>
+              @if (l.tipo_recorrencia === 'fixa') {
+                <span class="tag-recorrente">recorrente fixa</span>
+              } @else if (l.tipo_recorrencia === 'variavel') {
+                <span class="tag-recorrente">recorrente variável</span>
+              } @else if (l.tipo_recorrencia === 'parcelada') {
+                <span class="tag-recorrente">parcela {{ l.numero_parcela }}/{{ l.num_parcelas_total }}</span>
               }
             </p>
             <div class="card-bottom">

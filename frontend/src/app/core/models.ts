@@ -60,7 +60,7 @@ export interface DashboardResumo {
 }
 
 export type TipoLancamentoCasa = 'despesa' | 'receita';
-export type TipoRecorrencia = 'fixa' | 'variavel' | 'pontual';
+export type TipoRecorrencia = 'fixa' | 'variavel' | 'parcelada' | 'pontual';
 
 export interface LancamentoCasa {
   id: number;
@@ -76,6 +76,8 @@ export interface LancamentoCasa {
   observacoes: string;
   competencia_ano: number;
   competencia_mes: number;
+  numero_parcela: number | null;
+  num_parcelas_total: number | null;
 }
 
 export interface CategoriaResumoCasa {

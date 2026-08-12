@@ -123,6 +123,7 @@ export class ApiService {
     observacoes?: string;
     competencia_ano: number;
     competencia_mes: number;
+    num_parcelas?: number;
   }): Promise<LancamentoCasa> {
     return firstValueFrom(this.http.post<LancamentoCasa>(`${this.base}/casa/lancamentos`, lancamento));
   }

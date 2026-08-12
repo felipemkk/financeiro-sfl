@@ -104,7 +104,8 @@ func (h *Handler) marcarPaga(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag, err := h.pool.Exec(r.Context(),
+	ctx := r.Context()
+	tag, err := h.pool.Exec(ctx,
 		`UPDATE parcelas SET status = 'paga', valor_pago = valor, pago_em = now() WHERE id = $1`, id)
 	if err != nil {
 		http.Error(w, "erro ao marcar parcela como paga", http.StatusInternalServerError)
@@ -112,6 +113,13 @@ func (h *Handler) marcarPaga(w http.ResponseWriter, r *http.Request) {
 	}
 	if tag.RowsAffected() == 0 {
 		http.Error(w, "parcela não encontrada", http.StatusNotFound)
+		return
+	}
+
+	if _, err := h.pool.Exec(ctx,
+		`UPDATE casa_lancamentos SET status = 'paga', valor_realizado = valor_previsto, data_pagamento = now() WHERE venda_parcela_id = $1`, id,
+	); err != nil {
+		http.Error(w, "erro ao atualizar receita em Gastos da Casa", http.StatusInternalServerError)
 		return
 	}
 
@@ -126,7 +134,8 @@ func (h *Handler) despagar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag, err := h.pool.Exec(r.Context(),
+	ctx := r.Context()
+	tag, err := h.pool.Exec(ctx,
 		`UPDATE parcelas SET status = 'pendente', valor_pago = 0, pago_em = NULL WHERE id = $1`, id)
 	if err != nil {
 		http.Error(w, "erro ao despagar parcela", http.StatusInternalServerError)
@@ -134,6 +143,13 @@ func (h *Handler) despagar(w http.ResponseWriter, r *http.Request) {
 	}
 	if tag.RowsAffected() == 0 {
 		http.Error(w, "parcela não encontrada", http.StatusNotFound)
+		return
+	}
+
+	if _, err := h.pool.Exec(ctx,
+		`UPDATE casa_lancamentos SET status = 'pendente', valor_realizado = 0, data_pagamento = NULL WHERE venda_parcela_id = $1`, id,
+	); err != nil {
+		http.Error(w, "erro ao atualizar receita em Gastos da Casa", http.StatusInternalServerError)
 		return
 	}
 
@@ -188,6 +204,14 @@ func (h *Handler) abater(w http.ResponseWriter, r *http.Request) {
 		novoValorPago, novoStatus, pagoEm, id)
 	if err != nil {
 		http.Error(w, "erro ao abater valor", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := h.pool.Exec(ctx,
+		`UPDATE casa_lancamentos SET valor_realizado = $1, status = $2, data_pagamento = $3 WHERE venda_parcela_id = $4`,
+		novoValorPago, novoStatus, pagoEm, id,
+	); err != nil {
+		http.Error(w, "erro ao atualizar receita em Gastos da Casa", http.StatusInternalServerError)
 		return
 	}
 

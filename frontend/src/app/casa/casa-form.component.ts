@@ -40,12 +40,17 @@ import { TipoLancamentoCasa, TipoRecorrencia } from '../core/models';
           <button type="button" class="btn btn-sm" [class.btn-primary]="tipoRecorrencia() === 'variavel'" (click)="tipoRecorrencia.set('variavel')">
             Recorrente — valor variável
           </button>
+          <button type="button" class="btn btn-sm" [class.btn-primary]="tipoRecorrencia() === 'parcelada'" (click)="tipoRecorrencia.set('parcelada')">
+            Parcelada
+          </button>
         </div>
         @if (tipoRecorrencia() !== 'pontual') {
           <p class="ajuda">
-            {{ tipoRecorrencia() === 'fixa'
-              ? 'Todo mês será gerado um lançamento com esse mesmo valor (ex: Vivo, academia).'
-              : 'Todo mês será gerado um lançamento com esse valor como estimativa — você ajusta quando a conta chegar (ex: Cemig).' }}
+            @switch (tipoRecorrencia()) {
+              @case ('fixa') { Todo mês será gerado um lançamento com esse mesmo valor (ex: Vivo, academia). }
+              @case ('variavel') { Todo mês será gerado um lançamento com esse valor como estimativa — você ajusta quando a conta chegar (ex: Cemig). }
+              @case ('parcelada') { Gera uma parcela por mês até acabar — você já sabe quando termina (ex: parcelamento no cartão). }
+            }
           </p>
         }
       }
@@ -66,14 +71,38 @@ import { TipoLancamentoCasa, TipoRecorrencia } from '../core/models';
           <input matInput name="descricao" [(ngModel)]="descricao" required />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>{{ tipoRecorrencia() === 'variavel' && !modoEdicao ? 'Valor estimado (R$)' : 'Valor (R$)' }}</mat-label>
-          <input matInput type="number" min="0.01" step="0.01" name="valor" [(ngModel)]="valorPrevisto" required />
-        </mat-form-field>
+        @if (!modoEdicao && tipoRecorrencia() === 'parcelada') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor total (R$)</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valorTotalParcelada"
+                   [(ngModel)]="valorTotalParcelada" (ngModelChange)="onValorTotalParceladaChange()" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Quantidade de parcelas</mat-label>
+            <input matInput type="number" min="1" step="1" name="numParcelasParcelada"
+                   [(ngModel)]="numParcelasParcelada" (ngModelChange)="onNumParcelasParceladaChange()" required />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor de cada parcela (R$)</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valorParcelaParcelada"
+                   [(ngModel)]="valorParcelaParcelada" (ngModelChange)="onValorParcelaParceladaChange()" required />
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ tipoRecorrencia() === 'variavel' && !modoEdicao ? 'Valor estimado (R$)' : 'Valor (R$)' }}</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" name="valor" [(ngModel)]="valorPrevisto" required />
+          </mat-form-field>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>{{ tipo === 'receita' ? 'Data de recebimento' : 'Data de vencimento' }} (opcional)</mat-label>
-          <input matInput [matDatepicker]="picker" name="dataVencimento" [(ngModel)]="dataVencimento" />
+          <mat-label>
+            {{ tipo === 'receita' ? 'Data de recebimento' : 'Data de vencimento' }}
+            {{ !modoEdicao && tipoRecorrencia() === 'parcelada' ? '(1ª parcela)' : '(opcional)' }}
+          </mat-label>
+          <input matInput [matDatepicker]="picker" name="dataVencimento" [(ngModel)]="dataVencimento"
+                 [required]="!modoEdicao && tipoRecorrencia() === 'parcelada'" />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
@@ -148,6 +177,11 @@ export class CasaFormComponent implements OnInit {
   salvando = signal(false);
   erro = signal('');
 
+  numParcelasParcelada: number | null = null;
+  valorTotalParcelada: number | null = null;
+  valorParcelaParcelada: number | null = null;
+  private ultimoCampoEditado: 'total' | 'parcela' = 'total';
+
   modoEdicao = false;
   private lancamentoId: number | null = null;
   private competenciaAno = new Date().getFullYear();
@@ -184,9 +218,43 @@ export class CasaFormComponent implements OnInit {
     return this.tipo === 'receita' ? ['/casa/receitas'] : ['/casa'];
   }
 
+  onValorTotalParceladaChange(): void {
+    this.ultimoCampoEditado = 'total';
+    this.recalcularParcelada();
+  }
+
+  onValorParcelaParceladaChange(): void {
+    this.ultimoCampoEditado = 'parcela';
+    this.recalcularParcelada();
+  }
+
+  onNumParcelasParceladaChange(): void {
+    this.recalcularParcelada();
+  }
+
+  private recalcularParcelada(): void {
+    if (!this.numParcelasParcelada || this.numParcelasParcelada < 1) return;
+    if (this.ultimoCampoEditado === 'total' && this.valorTotalParcelada) {
+      this.valorParcelaParcelada = Math.round((this.valorTotalParcelada / this.numParcelasParcelada) * 100) / 100;
+    } else if (this.ultimoCampoEditado === 'parcela' && this.valorParcelaParcelada) {
+      this.valorTotalParcelada = Math.round(this.valorParcelaParcelada * this.numParcelasParcelada * 100) / 100;
+    }
+  }
+
   async salvar(): Promise<void> {
     this.erro.set('');
-    if (!this.categoria || !this.descricao || !this.valorPrevisto) {
+    const ehParcelada = !this.modoEdicao && this.tipoRecorrencia() === 'parcelada';
+
+    if (!this.categoria || !this.descricao) {
+      this.erro.set('Preencha categoria e descrição.');
+      return;
+    }
+    if (ehParcelada) {
+      if (!this.numParcelasParcelada || !this.valorParcelaParcelada || !this.dataVencimento) {
+        this.erro.set('Preencha quantidade de parcelas, valor e a data da 1ª parcela.');
+        return;
+      }
+    } else if (!this.valorPrevisto) {
       this.erro.set('Preencha categoria, descrição e valor.');
       return;
     }
@@ -199,9 +267,22 @@ export class CasaFormComponent implements OnInit {
         await this.api.atualizarLancamentoCasa(this.lancamentoId, {
           categoria: this.categoria,
           descricao: this.descricao,
-          valor_previsto: this.valorPrevisto,
+          valor_previsto: this.valorPrevisto!,
           data_vencimento: dataVencimentoStr,
           observacoes: this.observacoes,
+        });
+      } else if (ehParcelada) {
+        await this.api.criarLancamentoCasa({
+          tipo: this.tipo,
+          tipo_recorrencia: 'parcelada',
+          categoria: this.categoria,
+          descricao: this.descricao,
+          valor_previsto: this.valorParcelaParcelada!,
+          data_vencimento: dataVencimentoStr,
+          observacoes: this.observacoes,
+          competencia_ano: this.competenciaAno,
+          competencia_mes: this.competenciaMes,
+          num_parcelas: this.numParcelasParcelada!,
         });
       } else {
         await this.api.criarLancamentoCasa({
@@ -209,7 +290,7 @@ export class CasaFormComponent implements OnInit {
           tipo_recorrencia: this.tipoRecorrencia(),
           categoria: this.categoria,
           descricao: this.descricao,
-          valor_previsto: this.valorPrevisto,
+          valor_previsto: this.valorPrevisto!,
           data_vencimento: dataVencimentoStr,
           observacoes: this.observacoes,
           competencia_ano: this.competenciaAno,
