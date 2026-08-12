@@ -306,6 +306,23 @@ o tempo"
       .grid-produtos { grid-template-columns: repeat(2, 1fr); }
       .rodape { grid-template-columns: repeat(2, 1fr); }
     }
+    @media (max-width: 600px) {
+      .rodape {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 22px 20px;
+        margin-top: 12px;
+      }
+      .selo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+      }
+      .selo svg { margin-bottom: 0; flex: 0 0 auto; width: 20px; height: 20px; }
+      .selo-titulo { font-size: 0.6875rem; margin: 0 0 2px; }
+      .selo-texto { font-size: 0.6875rem; line-height: 1.4; }
+    }
   `],
 })
 export class VitrineComponent implements OnInit {
