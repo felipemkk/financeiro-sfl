@@ -28,6 +28,7 @@ func (h *Handler) Routes(r chi.Router) {
 
 type createRequest struct {
 	ClienteID           int     `json:"cliente_id"`
+	Tipo                string  `json:"tipo"` // "produto" | "emprestimo"
 	DescricaoProduto    string  `json:"descricao_produto"`
 	ValorTotal          float64 `json:"valor_total"`
 	ValorInvestido      float64 `json:"valor_investido"`
@@ -47,6 +48,7 @@ type parcelaResponse struct {
 type vendaResponse struct {
 	ID                  int               `json:"id"`
 	ClienteID           int               `json:"cliente_id"`
+	Tipo                string            `json:"tipo"`
 	DescricaoProduto    string            `json:"descricao_produto"`
 	ValorTotal          float64           `json:"valor_total"`
 	ValorInvestido      float64           `json:"valor_investido"`
@@ -67,6 +69,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dados obrigatórios: cliente_id, descricao_produto, valor_total, num_parcelas", http.StatusBadRequest)
 		return
 	}
+	if req.Tipo != "emprestimo" {
+		req.Tipo = "produto"
+	}
 
 	dataInicio, err := time.Parse("2006-01-02", req.DataPrimeiraParcela)
 	if err != nil {
@@ -84,9 +89,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 
 	var vendaID int
 	err = tx.QueryRow(ctx,
-		`INSERT INTO vendas (cliente_id, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela)
-		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		req.ClienteID, req.DescricaoProduto, req.ValorTotal, req.ValorInvestido, req.NumParcelas, dataInicio,
+		`INSERT INTO vendas (cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+		req.ClienteID, req.Tipo, req.DescricaoProduto, req.ValorTotal, req.ValorInvestido, req.NumParcelas, dataInicio,
 	).Scan(&vendaID)
 	if err != nil {
 		http.Error(w, "erro ao criar venda (cliente existe?)", http.StatusBadRequest)
@@ -124,6 +129,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	resp := vendaResponse{
 		ID:                  vendaID,
 		ClienteID:           req.ClienteID,
+		Tipo:                req.Tipo,
 		DescricaoProduto:    req.DescricaoProduto,
 		ValorTotal:          req.ValorTotal,
 		ValorInvestido:      req.ValorInvestido,
@@ -146,7 +152,7 @@ func (h *Handler) listByCliente(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.pool.Query(r.Context(),
-		`SELECT id, cliente_id, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
+		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
 		 FROM vendas WHERE cliente_id = $1 ORDER BY criada_em DESC`, clienteID)
 	if err != nil {
 		http.Error(w, "erro ao buscar vendas", http.StatusInternalServerError)
@@ -158,7 +164,7 @@ func (h *Handler) listByCliente(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var v vendaResponse
 		var dataInicio time.Time
-		if err := rows.Scan(&v.ID, &v.ClienteID, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio); err != nil {
+		if err := rows.Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio); err != nil {
 			http.Error(w, "erro ao ler vendas", http.StatusInternalServerError)
 			return
 		}
@@ -278,9 +284,9 @@ func (h *Handler) carregarVenda(r *http.Request, id int) (vendaResponse, error) 
 	var v vendaResponse
 	var dataInicio time.Time
 	err := h.pool.QueryRow(r.Context(),
-		`SELECT id, cliente_id, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
+		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
 		 FROM vendas WHERE id = $1`, id,
-	).Scan(&v.ID, &v.ClienteID, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio)
+	).Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio)
 	if err != nil {
 		return vendaResponse{}, err
 	}

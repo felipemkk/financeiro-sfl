@@ -31,6 +31,7 @@ type parcelaDoMes struct {
 	ClienteID        int     `json:"cliente_id"`
 	ClienteNome      string  `json:"cliente_nome"`
 	ClienteTelefone  string  `json:"cliente_telefone"`
+	Tipo             string  `json:"tipo"`
 	DescricaoProduto string  `json:"descricao_produto"`
 	Numero           int     `json:"numero"`
 	NumParcelas      int     `json:"num_parcelas"`
@@ -62,7 +63,7 @@ func (h *Handler) listByMonth(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.pool.Query(r.Context(), `
 		SELECT p.id, p.venda_id, c.id, c.nome, COALESCE(c.telefone,''),
-		       v.descricao_produto, p.numero, v.num_parcelas, p.valor, p.vencimento, p.status
+		       v.tipo, v.descricao_produto, p.numero, v.num_parcelas, p.valor, p.vencimento, p.status
 		FROM parcelas p
 		JOIN vendas v ON v.id = p.venda_id
 		JOIN clientes c ON c.id = v.cliente_id
