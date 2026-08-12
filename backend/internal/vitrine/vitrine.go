@@ -247,30 +247,32 @@ func (h *Handler) definirCapaCategoria(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := h.pool.Begin(r.Context())
+	ctx := r.Context()
+
+	tx, err := h.pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback(r.Context())
+	defer tx.Rollback(ctx)
 
 	var categoria string
-	if err := tx.QueryRow(r.Context(), `SELECT categoria FROM vitrine_produtos WHERE id = $1`, id).Scan(&categoria); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT categoria FROM vitrine_produtos WHERE id = $1`, id).Scan(&categoria); err != nil {
 		http.Error(w, "produto não encontrado", http.StatusNotFound)
 		return
 	}
 
-	if _, err := tx.Exec(r.Context(),
+	if _, err := tx.Exec(ctx,
 		`UPDATE vitrine_produtos SET capa_categoria = false WHERE categoria = $1 AND capa_categoria = true`, categoria,
 	); err != nil {
 		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
 		return
 	}
-	if _, err := tx.Exec(r.Context(), `UPDATE vitrine_produtos SET capa_categoria = true WHERE id = $1`, id); err != nil {
+	if _, err := tx.Exec(ctx, `UPDATE vitrine_produtos SET capa_categoria = true WHERE id = $1`, id); err != nil {
 		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
 		return
 	}
-	if err := tx.Commit(r.Context()); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		http.Error(w, "erro ao definir capa", http.StatusInternalServerError)
 		return
 	}
