@@ -9,6 +9,16 @@ export interface Cliente {
   ativo: boolean;
 }
 
+export interface ClientePendente {
+  id: number;
+  nome: string;
+  cpf: string;
+  telefone: string;
+  whatsapp: string;
+  endereco: string;
+  observacoes: string;
+}
+
 export interface Parcela {
   id: number;
   numero: number;

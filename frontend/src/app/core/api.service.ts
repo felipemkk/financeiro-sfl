@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Cliente,
+  ClientePendente,
   DashboardResumo,
   ImagemCarrossel,
   LancamentoCasa,
@@ -65,6 +66,26 @@ export class ApiService {
 
   ativarCliente(id: number): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/clientes/${id}/ativar`, {}));
+  }
+
+  enviarCadastroPublico(
+    cliente: Pick<ClientePendente, 'nome' | 'cpf' | 'telefone' | 'whatsapp' | 'endereco' | 'observacoes'>
+  ): Promise<ClientePendente> {
+    return firstValueFrom(this.http.post<ClientePendente>(`${this.base}/clientes/publico`, cliente));
+  }
+
+  listarClientesPendentes(): Promise<ClientePendente[]> {
+    return firstValueFrom(this.http.get<ClientePendente[]>(`${this.base}/clientes/pendentes`));
+  }
+
+  aprovarClientePendente(id: number, clienteId: number | null): Promise<Cliente> {
+    return firstValueFrom(
+      this.http.post<Cliente>(`${this.base}/clientes/pendentes/${id}/aprovar`, { cliente_id: clienteId })
+    );
+  }
+
+  descartarClientePendente(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.base}/clientes/pendentes/${id}`));
   }
 
   criarVenda(venda: {

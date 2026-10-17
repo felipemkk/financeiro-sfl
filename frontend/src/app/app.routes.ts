@@ -18,10 +18,23 @@ export const routes: Routes = [
     loadComponent: () => import('./cobranca/cobranca.component').then((m) => m.CobrancaComponent),
   },
   {
+    path: 'cadastro',
+    loadComponent: () =>
+      import('./clientes/cliente-cadastro-publico.component').then(
+        (m) => m.ClienteCadastroPublicoComponent
+      ),
+  },
+  {
     path: 'clientes',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./clientes/clientes-list.component').then((m) => m.ClientesListComponent),
+  },
+  {
+    path: 'clientes/pendentes',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./clientes/clientes-pendentes.component').then((m) => m.ClientesPendentesComponent),
   },
   {
     path: 'clientes/novo',

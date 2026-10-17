@@ -25,6 +25,29 @@ import { Cliente } from '../core/models';
     <div class="page">
       <p class="section-label">Clientes</p>
 
+      <a class="card link-pendentes" routerLink="/clientes/pendentes">
+        <mat-icon>how_to_reg</mat-icon>
+        <div class="texto">
+          <p class="titulo">Cadastros pendentes</p>
+          <p class="sub">Respostas do formulário de autocadastro aguardando revisão</p>
+        </div>
+        @if (totalPendentes() > 0) {
+          <span class="badge">{{ totalPendentes() }}</span>
+        }
+        <mat-icon class="seta">chevron_right</mat-icon>
+      </a>
+
+      <button type="button" class="card link-compartilhar" (click)="compartilharLink()">
+        <mat-icon>ios_share</mat-icon>
+        <div class="texto">
+          <p class="titulo">Enviar link de cadastro</p>
+          <p class="sub">A cliente preenche os dados dela sozinha, pelo celular</p>
+        </div>
+      </button>
+      @if (linkCopiado()) {
+        <p class="copiado">Link copiado!</p>
+      }
+
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Buscar por nome</mat-label>
         <input matInput [(ngModel)]="busca" (ngModelChange)="onBuscaChange()" />
@@ -61,6 +84,55 @@ import { Cliente } from '../core/models';
       padding-bottom: 24px;
       max-width: 640px;
       margin: 0 auto;
+    }
+    .link-pendentes, .link-compartilhar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      text-decoration: none;
+      color: inherit;
+      font-family: inherit;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .link-pendentes mat-icon:first-child,
+    .link-compartilhar mat-icon:first-child {
+      color: var(--brass);
+      flex: 0 0 auto;
+    }
+    .texto { flex: 1; min-width: 0; }
+    .titulo {
+      margin: 0 0 2px;
+      font-family: var(--font-display);
+      font-size: 0.9375rem;
+      color: var(--ink);
+    }
+    .sub {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+    }
+    .badge {
+      flex: 0 0 auto;
+      background: var(--critical-ink);
+      color: #fff;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+    }
+    .seta { color: var(--ink-faint); flex: 0 0 auto; }
+    .copiado {
+      font-size: 0.75rem;
+      color: var(--accent-ink);
+      margin: -4px 0 12px;
     }
     .full-width {
       width: 100%;
@@ -144,6 +216,8 @@ import { Cliente } from '../core/models';
 export class ClientesListComponent implements OnInit {
   clientes = signal<Cliente[]>([]);
   carregando = signal(true);
+  totalPendentes = signal(0);
+  linkCopiado = signal(false);
   busca = '';
   private buscaTimeout: any;
 
@@ -151,6 +225,7 @@ export class ClientesListComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.carregar();
+    this.api.listarClientesPendentes().then((pendentes) => this.totalPendentes.set(pendentes.length));
   }
 
   onBuscaChange(): void {
@@ -162,6 +237,19 @@ export class ClientesListComponent implements OnInit {
     const partes = nome.trim().split(/\s+/);
     const primeiras = partes.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '');
     return primeiras.join('') || '?';
+  }
+
+  async compartilharLink(): Promise<void> {
+    const link = `${window.location.origin}/cadastro`;
+    const mensagem = `Olá! Pra agilizar seu cadastro, preenche seus dados por aqui: ${link}`;
+    try {
+      await navigator.clipboard.writeText(mensagem);
+      this.linkCopiado.set(true);
+      setTimeout(() => this.linkCopiado.set(false), 2500);
+    } catch {
+      // Clipboard indisponível (ex: sem HTTPS) — abre o WhatsApp mesmo assim.
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
   }
 
   private async carregar(): Promise<void> {

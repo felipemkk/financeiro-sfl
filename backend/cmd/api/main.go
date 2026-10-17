@@ -76,6 +76,7 @@ func main() {
 
 	r.Post("/auth/login", authService.Login)
 	r.Route("/vitrine", vitrineHandler.PublicRoutes)
+	r.Route("/clientes/publico", clienteHandler.PublicRoutes)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authService.Middleware)
