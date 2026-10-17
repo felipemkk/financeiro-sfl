@@ -220,6 +220,14 @@ func (h *Handler) criarPendente(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "nome é obrigatório", http.StatusBadRequest)
 		return
 	}
+	if p.CPF == "" {
+		http.Error(w, "cpf é obrigatório", http.StatusBadRequest)
+		return
+	}
+	if p.Endereco == "" {
+		http.Error(w, "endereço é obrigatório", http.StatusBadRequest)
+		return
+	}
 
 	err := h.pool.QueryRow(r.Context(),
 		`INSERT INTO clientes_pendentes (nome, cpf, telefone, whatsapp, endereco, observacoes)
