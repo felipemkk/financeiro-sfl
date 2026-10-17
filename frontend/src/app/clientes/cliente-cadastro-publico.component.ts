@@ -22,6 +22,8 @@ interface ViaCepResposta {
   template: `
     <div class="cadastro-page">
       <div class="cadastro-card">
+        <img class="logo" src="/icon-512.png" alt="SFL" />
+
         @if (enviado()) {
           <p class="eyebrow">Recebemos seu cadastro</p>
           <h1>Obrigado! <em>:)</em></h1>
@@ -121,6 +123,13 @@ interface ViaCepResposta {
       border-radius: 16px;
       padding: 32px 28px;
       box-shadow: var(--shadow);
+    }
+    .logo {
+      display: block;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
     }
     .eyebrow {
       font-size: 0.6875rem;
