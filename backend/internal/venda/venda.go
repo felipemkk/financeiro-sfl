@@ -2,20 +2,24 @@ package venda
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"financeiro-sfl/backend/internal/assinatura"
 )
 
 type Handler struct {
-	pool *pgxpool.Pool
+	pool       *pgxpool.Pool
+	assinatura *assinatura.Client
 }
 
-func NewHandler(pool *pgxpool.Pool) *Handler {
-	return &Handler{pool: pool}
+func NewHandler(pool *pgxpool.Pool, assinaturaClient *assinatura.Client) *Handler {
+	return &Handler{pool: pool, assinatura: assinaturaClient}
 }
 
 func (h *Handler) Routes(r chi.Router) {
@@ -24,6 +28,13 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Get("/{id}", h.getByID)
 	r.Post("/{id}/quitar", h.quitar)
 	r.Put("/{id}/investido", h.atualizarInvestido)
+	r.Post("/{id}/contrato", h.gerarContrato)
+}
+
+// WebhookRoutes é montado fora do grupo autenticado — é a Autentique quem
+// chama esse endpoint para avisar quando uma cliente assina o contrato.
+func (h *Handler) WebhookRoutes(r chi.Router) {
+	r.Post("/autentique", h.webhookAutentique)
 }
 
 type createRequest struct {
@@ -46,16 +57,18 @@ type parcelaResponse struct {
 }
 
 type vendaResponse struct {
-	ID                  int               `json:"id"`
-	ClienteID           int               `json:"cliente_id"`
-	Tipo                string            `json:"tipo"`
-	DescricaoProduto    string            `json:"descricao_produto"`
-	ValorTotal          float64           `json:"valor_total"`
-	ValorInvestido      float64           `json:"valor_investido"`
-	Lucro               float64           `json:"lucro"`
-	NumParcelas         int               `json:"num_parcelas"`
-	DataPrimeiraParcela string            `json:"data_primeira_parcela"`
-	Parcelas            []parcelaResponse `json:"parcelas"`
+	ID                     int               `json:"id"`
+	ClienteID              int               `json:"cliente_id"`
+	Tipo                   string            `json:"tipo"`
+	DescricaoProduto       string            `json:"descricao_produto"`
+	ValorTotal             float64           `json:"valor_total"`
+	ValorInvestido         float64           `json:"valor_investido"`
+	Lucro                  float64           `json:"lucro"`
+	NumParcelas            int               `json:"num_parcelas"`
+	DataPrimeiraParcela    string            `json:"data_primeira_parcela"`
+	Parcelas               []parcelaResponse `json:"parcelas"`
+	ContratoStatus         string            `json:"contrato_status"`
+	ContratoLinkAssinatura string            `json:"contrato_link_assinatura"`
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +173,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		NumParcelas:         req.NumParcelas,
 		DataPrimeiraParcela: dataInicio.Format("2006-01-02"),
 		Parcelas:            parcelas,
+		ContratoStatus:      "nao_iniciado",
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -175,7 +189,8 @@ func (h *Handler) listByCliente(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.pool.Query(r.Context(),
-		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
+		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela,
+		        contrato_status, COALESCE(contrato_link_assinatura, '')
 		 FROM vendas WHERE cliente_id = $1 ORDER BY criada_em DESC`, clienteID)
 	if err != nil {
 		http.Error(w, "erro ao buscar vendas", http.StatusInternalServerError)
@@ -187,7 +202,8 @@ func (h *Handler) listByCliente(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var v vendaResponse
 		var dataInicio time.Time
-		if err := rows.Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio); err != nil {
+		if err := rows.Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio,
+			&v.ContratoStatus, &v.ContratoLinkAssinatura); err != nil {
 			http.Error(w, "erro ao ler vendas", http.StatusInternalServerError)
 			return
 		}
@@ -315,9 +331,11 @@ func (h *Handler) carregarVenda(r *http.Request, id int) (vendaResponse, error) 
 	var v vendaResponse
 	var dataInicio time.Time
 	err := h.pool.QueryRow(r.Context(),
-		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela
+		`SELECT id, cliente_id, tipo, descricao_produto, valor_total, valor_investido, num_parcelas, data_primeira_parcela,
+		        contrato_status, COALESCE(contrato_link_assinatura, '')
 		 FROM vendas WHERE id = $1`, id,
-	).Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio)
+	).Scan(&v.ID, &v.ClienteID, &v.Tipo, &v.DescricaoProduto, &v.ValorTotal, &v.ValorInvestido, &v.NumParcelas, &dataInicio,
+		&v.ContratoStatus, &v.ContratoLinkAssinatura)
 	if err != nil {
 		return vendaResponse{}, err
 	}
@@ -352,4 +370,131 @@ func (h *Handler) carregarParcelas(r *http.Request, vendaID int) ([]parcelaRespo
 		parcelas = append(parcelas, p)
 	}
 	return parcelas, nil
+}
+
+// gerarContrato monta o contrato de venda a prazo com confissão de dívida
+// (em PDF) e envia para assinatura eletrônica na Autentique, guardando o
+// link de assinatura para a lojista enviar pelo próprio WhatsApp.
+func (h *Handler) gerarContrato(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+	if !h.assinatura.Configurado() {
+		http.Error(w, "assinatura eletrônica não configurada nesse ambiente", http.StatusServiceUnavailable)
+		return
+	}
+
+	ctx := r.Context()
+
+	v, err := h.carregarVenda(r, id)
+	if err != nil {
+		http.Error(w, "venda não encontrada", http.StatusNotFound)
+		return
+	}
+
+	var clienteNome, clienteCPF, clienteEndereco string
+	if err := h.pool.QueryRow(ctx,
+		`SELECT nome, COALESCE(cpf,''), COALESCE(endereco,'') FROM clientes WHERE id = $1`, v.ClienteID,
+	).Scan(&clienteNome, &clienteCPF, &clienteEndereco); err != nil {
+		http.Error(w, "erro ao buscar cliente", http.StatusInternalServerError)
+		return
+	}
+
+	parcelasContrato := make([]assinatura.ParcelaContrato, 0, len(v.Parcelas))
+	for _, p := range v.Parcelas {
+		venc, err := time.Parse("2006-01-02", p.Vencimento)
+		if err != nil {
+			http.Error(w, "erro ao ler vencimento da parcela", http.StatusInternalServerError)
+			return
+		}
+		parcelasContrato = append(parcelasContrato, assinatura.ParcelaContrato{
+			Numero: p.Numero, Valor: p.Valor, Vencimento: venc,
+		})
+	}
+
+	pdf, err := assinatura.GerarContratoPDF(assinatura.DadosContrato{
+		ClienteNome:     clienteNome,
+		ClienteCPF:      clienteCPF,
+		ClienteEndereco: clienteEndereco,
+		Produto:         v.DescricaoProduto,
+		ValorTotal:      v.ValorTotal,
+		Parcelas:        parcelasContrato,
+	})
+	if err != nil {
+		http.Error(w, "erro ao gerar PDF do contrato", http.StatusInternalServerError)
+		return
+	}
+
+	nomeDocumento := fmt.Sprintf("Contrato venda #%d - %s", v.ID, clienteNome)
+	resultado, err := h.assinatura.CriarDocumento(ctx, nomeDocumento, pdf, assinatura.Signatario{
+		Nome: clienteNome, CPF: clienteCPF,
+	})
+	if err != nil {
+		http.Error(w, "erro ao enviar contrato para assinatura: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	if _, err := h.pool.Exec(ctx,
+		`UPDATE vendas SET contrato_status = 'aguardando_assinatura', contrato_documento_id = $1,
+		 contrato_assinatura_id = $2, contrato_link_assinatura = $3 WHERE id = $4`,
+		resultado.DocumentoID, resultado.AssinaturaID, resultado.LinkAssinatura, id,
+	); err != nil {
+		http.Error(w, "erro ao salvar status do contrato", http.StatusInternalServerError)
+		return
+	}
+
+	v2, err := h.carregarVenda(r, id)
+	if err != nil {
+		http.Error(w, "erro ao carregar venda atualizada", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v2)
+}
+
+type webhookAutentiquePayload struct {
+	Event struct {
+		Type string `json:"type"`
+		Data struct {
+			Object struct {
+				Document string `json:"document"`
+			} `json:"object"`
+		} `json:"data"`
+	} `json:"event"`
+}
+
+func (h *Handler) webhookAutentique(w http.ResponseWriter, r *http.Request) {
+	var payload webhookAutentiquePayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "payload inválido", http.StatusBadRequest)
+		return
+	}
+
+	documentoID := payload.Event.Data.Object.Document
+	if documentoID == "" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	var novoStatus string
+	switch payload.Event.Type {
+	case "signature.accepted", "document.finished":
+		novoStatus = "assinado"
+	case "signature.rejected":
+		novoStatus = "recusado"
+	default:
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if _, err := h.pool.Exec(r.Context(),
+		`UPDATE vendas SET contrato_status = $1 WHERE contrato_documento_id = $2`, novoStatus, documentoID,
+	); err != nil {
+		http.Error(w, "erro ao atualizar status do contrato", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 
+	"financeiro-sfl/backend/internal/assinatura"
 	"financeiro-sfl/backend/internal/auth"
 	"financeiro-sfl/backend/internal/casa"
 	"financeiro-sfl/backend/internal/cliente"
@@ -40,6 +41,7 @@ func main() {
 	if frontendOrigin == "" {
 		frontendOrigin = "http://localhost:4200"
 	}
+	autentiqueToken := os.Getenv("AUTENTIQUE_API_TOKEN")
 
 	ctx := context.Background()
 	pool, err := db.Connect(ctx, connString)
@@ -54,7 +56,8 @@ func main() {
 
 	authService := auth.NewService(pool, jwtSecret)
 	clienteHandler := cliente.NewHandler(pool)
-	vendaHandler := venda.NewHandler(pool)
+	assinaturaClient := assinatura.NewClient(autentiqueToken)
+	vendaHandler := venda.NewHandler(pool, assinaturaClient)
 	parcelaHandler := parcela.NewHandler(pool)
 	dashboardHandler := dashboard.NewHandler(pool)
 	casaHandler := casa.NewHandler(pool)
@@ -77,6 +80,7 @@ func main() {
 	r.Post("/auth/login", authService.Login)
 	r.Route("/vitrine", vitrineHandler.PublicRoutes)
 	r.Route("/clientes/publico", clienteHandler.PublicRoutes)
+	r.Route("/webhooks", vendaHandler.WebhookRoutes)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authService.Middleware)

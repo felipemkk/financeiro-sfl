@@ -68,6 +68,60 @@ import { Parcela, Venda } from '../core/models';
         }
 
         <div class="divider-row">
+          <p class="section-label">Contrato</p>
+          <div class="rule"></div>
+        </div>
+        <div class="card contrato-card">
+          @if (v.contrato_status === 'assinado') {
+            <div class="contrato-status">
+              <mat-icon class="icone-assinado">check_circle</mat-icon>
+              <span>Contrato assinado pela cliente</span>
+            </div>
+            @if (v.contrato_link_assinatura) {
+              <a class="btn btn-xs" [href]="v.contrato_link_assinatura" target="_blank" rel="noopener">Ver contrato</a>
+            }
+          } @else if (v.contrato_status === 'aguardando_assinatura') {
+            <div class="contrato-status">
+              <mat-icon class="icone-aguardando">schedule</mat-icon>
+              <span>Aguardando a cliente assinar</span>
+            </div>
+            <div class="contrato-acoes">
+              <button class="btn btn-primary btn-xs" (click)="enviarContratoWhatsapp(v)">
+                <mat-icon>chat</mat-icon>
+                Enviar por WhatsApp
+              </button>
+              <button class="btn btn-xs" (click)="copiarLinkContrato(v)">Copiar link</button>
+            </div>
+            @if (linkCopiado()) {
+              <p class="copiado">Link copiado!</p>
+            }
+          } @else if (v.contrato_status === 'recusado') {
+            <div class="contrato-status">
+              <mat-icon class="icone-recusado">cancel</mat-icon>
+              <span>A cliente recusou a assinatura</span>
+            </div>
+            <button class="btn btn-xs" (click)="gerarContrato()" [disabled]="gerandoContrato()">
+              @if (gerandoContrato()) { <mat-spinner diameter="14"></mat-spinner> } @else { Gerar novo contrato }
+            </button>
+          } @else {
+            <p class="contrato-ajuda">
+              Gera um contrato de venda a prazo com confissão de dívida, assinado eletronicamente pela cliente —
+              serve de base pra cobrança caso ela não pague.
+            </p>
+            <button class="btn btn-primary btn-xs" (click)="gerarContrato()" [disabled]="gerandoContrato()">
+              @if (gerandoContrato()) {
+                <mat-spinner diameter="14"></mat-spinner>
+              } @else {
+                Gerar contrato pra assinatura
+              }
+            </button>
+          }
+          @if (erroContrato()) {
+            <p class="erro-contrato">{{ erroContrato() }}</p>
+          }
+        </div>
+
+        <div class="divider-row">
           <p class="section-label">Parcelas</p>
           <div class="rule"></div>
         </div>
@@ -177,6 +231,46 @@ import { Parcela, Venda } from '../core/models';
       max-width: 200px;
     }
     .btn-block { width: 100%; margin-bottom: 8px; }
+    .contrato-card {
+      margin-bottom: 4px;
+    }
+    .contrato-ajuda {
+      color: var(--ink-muted);
+      font-size: 0.8125rem;
+      margin: 0 0 12px;
+      line-height: 1.5;
+    }
+    .contrato-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+    .icone-assinado { color: var(--accent-ink); }
+    .icone-aguardando { color: var(--brass); }
+    .icone-recusado { color: var(--critical-ink); }
+    .contrato-acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-xs {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+    .copiado {
+      font-size: 0.75rem;
+      color: var(--accent-ink);
+      margin: 8px 0 0;
+    }
+    .erro-contrato {
+      color: var(--critical-ink);
+      font-size: 0.8125rem;
+      margin: 8px 0 0;
+    }
     .centro {
       display: flex;
       justify-content: center;
@@ -255,6 +349,9 @@ export class VendaDetalheComponent implements OnInit {
   editandoInvestido = signal(false);
   salvandoInvestido = signal(false);
   investidoEditavel: number | null = null;
+  gerandoContrato = signal(false);
+  erroContrato = signal('');
+  linkCopiado = signal(false);
 
   private vendaId!: number;
 
@@ -343,6 +440,33 @@ export class VendaDetalheComponent implements OnInit {
       await this.carregar();
     } finally {
       this.processando.set(null);
+    }
+  }
+
+  async gerarContrato(): Promise<void> {
+    this.erroContrato.set('');
+    this.gerandoContrato.set(true);
+    try {
+      this.venda.set(await this.api.gerarContratoVenda(this.vendaId));
+    } catch {
+      this.erroContrato.set('Não foi possível gerar o contrato. Confira se a assinatura eletrônica está configurada.');
+    } finally {
+      this.gerandoContrato.set(false);
+    }
+  }
+
+  enviarContratoWhatsapp(v: Venda): void {
+    const mensagem = `Olá! Segue o contrato da sua compra pra você assinar: ${v.contrato_link_assinatura}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensagem)}`, '_blank');
+  }
+
+  async copiarLinkContrato(v: Venda): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(v.contrato_link_assinatura);
+      this.linkCopiado.set(true);
+      setTimeout(() => this.linkCopiado.set(false), 2500);
+    } catch {
+      // Clipboard indisponível — a cliente ainda pode usar o botão de WhatsApp.
     }
   }
 }

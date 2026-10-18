@@ -118,6 +118,10 @@ export class ApiService {
     );
   }
 
+  gerarContratoVenda(id: number): Promise<Venda> {
+    return firstValueFrom(this.http.post<Venda>(`${this.base}/vendas/${id}/contrato`, {}));
+  }
+
   listarParcelasDoMes(ano: number, mes: number): Promise<ParcelaDoMes[]> {
     return firstValueFrom(
       this.http.get<ParcelaDoMes[]>(`${this.base}/parcelas?ano=${ano}&mes=${mes}`)

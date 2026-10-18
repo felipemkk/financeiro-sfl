@@ -30,6 +30,8 @@ export interface Parcela {
 
 export type TipoVenda = 'produto' | 'emprestimo';
 
+export type ContratoStatus = 'nao_iniciado' | 'aguardando_assinatura' | 'assinado' | 'recusado';
+
 export interface Venda {
   id: number;
   cliente_id: number;
@@ -41,6 +43,8 @@ export interface Venda {
   num_parcelas: number;
   data_primeira_parcela: string;
   parcelas: Parcela[];
+  contrato_status: ContratoStatus;
+  contrato_link_assinatura: string;
 }
 
 export interface ParcelaDoMes {
