@@ -22,7 +22,7 @@ interface ViaCepResposta {
   template: `
     <div class="cadastro-page">
       <div class="cadastro-card">
-        <img class="logo" src="/icon-512.png" alt="SFL" />
+        <img class="logo" src="/logo-sfl.png" alt="Store Flávia Lima" />
 
         @if (enviado()) {
           <p class="eyebrow">Recebemos seu cadastro</p>
@@ -126,10 +126,9 @@ interface ViaCepResposta {
     }
     .logo {
       display: block;
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 20px;
-      border-radius: 16px;
+      width: 180px;
+      height: auto;
+      margin: 0 auto 24px;
     }
     .eyebrow {
       font-size: 0.6875rem;
