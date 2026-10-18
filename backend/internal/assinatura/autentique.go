@@ -54,7 +54,10 @@ type graphqlResposta struct {
 		} `json:"createDocument"`
 	} `json:"data"`
 	Errors []struct {
-		Message string `json:"message"`
+		Message    string `json:"message"`
+		Extensions struct {
+			Validation map[string][]string `json:"validation"`
+		} `json:"extensions"`
 	} `json:"errors"`
 }
 
@@ -138,16 +141,27 @@ func (c *Client) CriarDocumento(ctx context.Context, nomeDocumento string, pdf [
 		return DocumentoCriado{}, fmt.Errorf("resposta inesperada da Autentique: %s", string(corpoResposta))
 	}
 	if len(r.Errors) > 0 {
+		if msgs, ok := r.Errors[0].Extensions.Validation["signers.0.configs.cpf"]; ok && len(msgs) > 0 {
+			return DocumentoCriado{}, fmt.Errorf("CPF da cliente parece inválido — confira o cadastro antes de gerar o contrato")
+		}
 		return DocumentoCriado{}, fmt.Errorf("erro da Autentique: %s", r.Errors[0].Message)
 	}
 	if r.Data.CreateDocument.ID == "" || len(r.Data.CreateDocument.Signatures) == 0 {
 		return DocumentoCriado{}, fmt.Errorf("resposta da Autentique sem documento/assinatura: %s", string(corpoResposta))
 	}
 
-	assinatura := r.Data.CreateDocument.Signatures[0]
-	return DocumentoCriado{
-		DocumentoID:    r.Data.CreateDocument.ID,
-		AssinaturaID:   assinatura.PublicID,
-		LinkAssinatura: assinatura.Link.ShortLink,
-	}, nil
+	// A Autentique costuma incluir, além da cliente, uma assinatura extra
+	// referente à conta dona do token (sem link, delivery_method por
+	// e-mail) — por isso escolhemos explicitamente a que tem link de
+	// assinatura gerado, em vez de assumir que é sempre a primeira da lista.
+	for _, s := range r.Data.CreateDocument.Signatures {
+		if s.Link.ShortLink != "" {
+			return DocumentoCriado{
+				DocumentoID:    r.Data.CreateDocument.ID,
+				AssinaturaID:   s.PublicID,
+				LinkAssinatura: s.Link.ShortLink,
+			}, nil
+		}
+	}
+	return DocumentoCriado{}, fmt.Errorf("a Autentique não retornou um link de assinatura para a cliente")
 }
