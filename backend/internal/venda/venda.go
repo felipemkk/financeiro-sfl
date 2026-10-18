@@ -1,8 +1,12 @@
 package venda
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,12 +18,13 @@ import (
 )
 
 type Handler struct {
-	pool       *pgxpool.Pool
-	assinatura *assinatura.Client
+	pool          *pgxpool.Pool
+	assinatura    *assinatura.Client
+	webhookSecret string
 }
 
-func NewHandler(pool *pgxpool.Pool, assinaturaClient *assinatura.Client) *Handler {
-	return &Handler{pool: pool, assinatura: assinaturaClient}
+func NewHandler(pool *pgxpool.Pool, assinaturaClient *assinatura.Client, webhookSecret string) *Handler {
+	return &Handler{pool: pool, assinatura: assinaturaClient, webhookSecret: webhookSecret}
 }
 
 func (h *Handler) Routes(r chi.Router) {
@@ -466,8 +471,25 @@ type webhookAutentiquePayload struct {
 }
 
 func (h *Handler) webhookAutentique(w http.ResponseWriter, r *http.Request) {
+	corpo, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "erro ao ler corpo da requisição", http.StatusBadRequest)
+		return
+	}
+
+	if h.webhookSecret != "" {
+		mac := hmac.New(sha256.New, []byte(h.webhookSecret))
+		mac.Write(corpo)
+		esperada := hex.EncodeToString(mac.Sum(nil))
+		recebida := r.Header.Get("X-Autentique-Signature")
+		if !hmac.Equal([]byte(recebida), []byte(esperada)) {
+			http.Error(w, "assinatura inválida", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	var payload webhookAutentiquePayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	if err := json.Unmarshal(corpo, &payload); err != nil {
 		http.Error(w, "payload inválido", http.StatusBadRequest)
 		return
 	}

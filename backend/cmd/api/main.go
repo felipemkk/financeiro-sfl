@@ -42,6 +42,7 @@ func main() {
 		frontendOrigin = "http://localhost:4200"
 	}
 	autentiqueToken := os.Getenv("AUTENTIQUE_API_TOKEN")
+	autentiqueWebhookSecret := os.Getenv("AUTENTIQUE_WEBHOOK_SECRET")
 
 	ctx := context.Background()
 	pool, err := db.Connect(ctx, connString)
@@ -57,7 +58,7 @@ func main() {
 	authService := auth.NewService(pool, jwtSecret)
 	clienteHandler := cliente.NewHandler(pool)
 	assinaturaClient := assinatura.NewClient(autentiqueToken)
-	vendaHandler := venda.NewHandler(pool, assinaturaClient)
+	vendaHandler := venda.NewHandler(pool, assinaturaClient, autentiqueWebhookSecret)
 	parcelaHandler := parcela.NewHandler(pool)
 	dashboardHandler := dashboard.NewHandler(pool)
 	casaHandler := casa.NewHandler(pool)
