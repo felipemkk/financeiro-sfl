@@ -1,2 +1,6 @@
 .DS_Store
 *.log
+
+# Pesquisas/relatórios gerados sob demanda (não fazem parte do app)
+/research_notes/
+/reports/
